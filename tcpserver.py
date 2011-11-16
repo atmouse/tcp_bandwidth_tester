@@ -144,20 +144,27 @@ if __name__ == "__main__":
   while len(y) < 100:
     y.append(0)
 
-
+  current_speed = 140
   line, = plot(x,y,'g')
-  axis(array([0, 100, 0, 140]))
+  axis(array([0, 100, 0, current_speed]))
 
   xticks([])
   grid('on')
   title('TCP')
   ylabel('MB/s')
 
+  axis(array([0, 100, 0, 200]))
+
   while 1:
     b.initiate()
     time.sleep(1)
     b.terminate()
     speed = b.get_bandwidth()/(1000*1000) 
+
+    if speed > current_speed:
+        current_speed = speed + 40
+	axis(array([0, 100, 0, current_speed]))
+
     print str(speed) + ' MBytes/second'
     y.pop(0)
     y.append(speed)

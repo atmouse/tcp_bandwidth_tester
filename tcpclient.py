@@ -16,10 +16,20 @@ class TCP_Client:
 
     def open_socket(self):
         try:
-          self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-          self.socket.connect((self.host, self.port))
-        except socket.error:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          
+            #set congestion conrol algorithm
+            #s = self.socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY)
+            #print 's: ' + str(s)
+            socket.TCP_CONGESTION = 13
+            self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, 'reno')
+            temp = self.socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION)
+            print 'temp: ' + str(temp)
+
+            self.socket.connect((self.host, self.port))
+        except socket.error, (value, message):
           print "Error, server refused connection"
+          print message
           sys.exit(1)
 
     def close_socket(self):
@@ -55,4 +65,4 @@ if __name__ == '__main__':
 
     c = TCP_Client(ip, int(host))
     c.open_socket()
-    c.spam() 
+    c.spam()
