@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#Show the TCP congestion control algorithms available as pluggable modules.
+
+kernel_version=$(uname -r)
+#echo "$kernel_version"
+ls /lib/modules/$kernel_version/kernel/net/ipv4/

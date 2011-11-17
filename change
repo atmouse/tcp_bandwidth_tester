@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#Change the current congestion control algorithm to the algorithm specified by commandline argument.
+#Specified algorithm must be one of the available algorithms in /proc/sys/net/ipv4/tcp_available_congestion_control
+#Run as root.
+
+sysctl net.ipv4.tcp_congestion_control="$1"

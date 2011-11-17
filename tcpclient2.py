@@ -26,6 +26,9 @@ class TCP_Client:
 
             self.socket.connect((self.host, self.port))
 
+            #client identifies itself to server
+            #self.send("# " + self.cong)
+            #TODO
         except socket.error, (value, message):
           print "Error: " + message
           sys.exit(1)

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+#Install the pluggable TCP congestion control module specified by commandline argument.
+#This not only changes the current algoritm used, but also makes the specified module
+#an "available" congestion control algorithm.
+#Run as root
+
+/sbin/sysctl -w net.ipv4.tcp_congestion_control="$1"

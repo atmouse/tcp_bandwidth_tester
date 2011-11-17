@@ -1,0 +1,6 @@
+#!/bin/bash
+
+#Show the currently available TCP congestion control algorithms.
+#Can be found in /proc/sys/net/ipv4/tcp_available_congestion_control
+
+sysctl net.ipv4.tcp_available_congestion_control

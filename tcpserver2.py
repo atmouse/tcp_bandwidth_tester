@@ -14,6 +14,9 @@ import pickle
 import time
 import datetime
 
+#Dictionaries are thread safe. Threads might access old values depending on execution order,
+#but corrupt values will not result. Also, in this case, each thread will only ever read from,
+#or write to, a single thread.
 global amount
 
 def isOpen(ip,port):
@@ -32,14 +35,13 @@ class Server:
     self.size = 1024
     self.socket = None
     self.threads = []
-    amount[0] = 0
 
   def open_socket(self):
     try:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        a = self.socket.bind((self.host,self.port))
+        a = self.socket.bind((self.host, self.port))
         b = self.socket.listen(self.backlog)
-    except socket.error, (value,message):
+    except socket.error, (value, message):
         if self.socket:
             self.socket.close()
         print "Could not open socket: " + message
@@ -78,32 +80,48 @@ class Server:
         c.join()
 
 class BandwidthMonitor(threading.Thread):
-  def __init__(self):
+  def __init__(self, key):
+    #key, is the specific congestion control algorithm this bandwidth monitor is associated with. 
     self.start = 0
     self.end = 0
     self.amount_now = 0
+    self.key = key
 
   def initiate(self):
     self.start = time.time()
 
   def terminate(self):
-    self.amount_now = amount[0]
-    amount[0] = 0
+    self.amount_now = amount[self.key]
+    amount[self.key] = 0
     self.end = time.time()
 
   def get_bandwidth(self):
     return self.amount_now/(self.end-self.start)
 
 class Client(threading.Thread): #client thread
-  def __init__(self,(client,address)):
+  def __init__(self, (client, address)):
+    #key is the specific congestion control algorithm this client is associated with.
     threading.Thread.__init__(self) 
     self.client = client #the socket
     self.address = address #the address
     self.size = 1024 #the message size
     self.username = None
     self.running = 1 #running state variable
+    self.key = ''
 
   def run(self):
+
+    #TODO wait for client to indicate its type of congestion control
+    data = self.client.recv(self.size)
+    print 'Type of Congestion Control: ' + data
+    #TODO self.key = ...
+    amount[key] = 0
+
+    #TODO create a new bandwidth monitor thread
+    #TODO create a new graphing thread
+
+    #TODO Signal client to start sending data.
+
     while self.running:
         try:
           data = self.client.recv(self.size)
@@ -112,16 +130,15 @@ class Client(threading.Thread): #client thread
           pass
 
         if data:
-          amount[0] += len(data)
+            amount[self.key] += len(data)
         else:
-            amount[0] = 0
+            amount[self.key] = 0
             self.client.close()
             self.running = 0
 
 if __name__ == "__main__":
 
-  amount = []
-  amount.append(0)
+  amount = {}
   
   try:
     port = sys.argv[1]  
