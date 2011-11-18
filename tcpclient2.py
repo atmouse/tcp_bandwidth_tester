@@ -14,7 +14,7 @@ class TCP_Client:
         self.socket = None
         self.congestion = cong #congestion control to be used, also used to identify client
 
-    def open_socket(self):
+    def start(self):
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
           
@@ -27,8 +27,17 @@ class TCP_Client:
             self.socket.connect((self.host, self.port))
 
             #client identifies itself to server
-            #self.send("# " + self.cong)
-            #TODO
+            self.send("# " + self.congestion)
+
+            #client waits for server reply
+            data = self.socket.recv(self.size)
+            message = data.split(' ')
+            if message[1] == 'proceed' and message[2] == self.congestion:
+                print 'Server acknowledges TCP ' + self.congestion + '.'
+                self.spam();
+            else:
+                print 'Server responded incorrectly: ' + str(message)
+
         except socket.error, (value, message):
           print "Error: " + message
           sys.exit(1)
@@ -58,12 +67,12 @@ if __name__ == '__main__':
     try:
         ip = sys.argv[1]
         host = sys.argv[2]
+        congestion = sys.argv[3]
     except IndexError:
-        print '<ip> <port>'
+        print '<ip> <port> <congestion control>'
         sys.exit(0)
 
     print "Starting TCP client"
 
-    c = TCP_Client(ip, int(host))
-    c.open_socket()
-    c.spam()
+    c = TCP_Client(ip, int(host), congestion)
+    c.start()
