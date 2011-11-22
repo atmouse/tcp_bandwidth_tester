@@ -70,17 +70,18 @@ class Server:
 
             if s == self.socket:
                 c = Client(self.socket.accept())
-                c.setDaemon(True) #TODO true or false?
+                c.setDaemon(True)
                 c.start()
                 self.threads.append(c)
 
             elif s == sys.stdin:
                 # handle standard input
                 line = sys.stdin.readline()
-                if line.strip() == 'q':
-                  running = 0
-                else:
-                  print "Type 'q' to stop the server"
+                #if line.strip() == 'q':
+                #  running = 0
+                #else:
+                #  print "Type 'q' to stop the server"
+                print 'Press "quit" on the graphing window to quit the server.\n'
 
     print 'Received signal to stop'
 
@@ -161,8 +162,8 @@ class GraphWindow():
                 self.toolbar = toolbar = NavigationToolbar2TkAgg(canvas, master)
 
                 # Instantiate and pack quit button
-                #self.button = button = Tk.Button(master, text='Quit', command=sys.exit)
-                #button.pack(side=Tk.BOTTOM)
+                self.button = button = Tk.Button(master, text='Quit', command=sys.exit)
+                button.pack(side=Tk.BOTTOM)
 
                 # Show canvas and toolbar
                 toolbar.update()
@@ -171,7 +172,7 @@ class GraphWindow():
         def __call__(self):
                 keys = bandwidth.keys()
                 self.ax1.clear()
-                self.legend = True
+                #self.legend = True
 
                 line_handle = []
 
@@ -189,10 +190,13 @@ class GraphWindow():
                         c = self.colours[0]
                         self.colours.pop(0)
                         self.y[i] = (y, c)
-                        self.legend = False
+                        #self.legend = False
                         l = self.ax1.plot(self.x, self.y[i][0], self.y[i][1])
+                        line_handle.append(l)
+                        self.legend = True
 
-                if len(keys) > 1 and self.legend:
+                #if len(keys) > 1 and self.legend:
+                if self.legend:
                     self.ax1.legend(line_handle, keys, 'upper left')
                  
                 self.canvas.show()
@@ -232,7 +236,7 @@ if __name__ == "__main__":
 
     s = Server(int(port))
     t = threading.Thread(target = s.run)
-    t.setDaemon(False)
+    t.setDaemon(True) #TODO changed from False
     t.start()
 
     #graphing gui stuff
@@ -240,6 +244,7 @@ if __name__ == "__main__":
     root.wm_title("Embedding in TK")
     graph = GraphWindow(root)
     update = UpdatePlot(graph)
+    update.setDaemon(True) #TODO works?
     update.start()
 
     Tk.mainloop()
