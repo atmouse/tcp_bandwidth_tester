@@ -24,7 +24,7 @@ class TCP_Client:
                 temp = self.socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, 10)
                 print 'Congestion control used for this TCP connection set to: ' + str(temp)
             except Exception, (value, message):
-                print 'Cannot set socket option.'
+                print 'Cannot set socket option. The TCP client must be launched with sudo rights'
 
             self.socket.connect((self.host, self.port))
 
@@ -36,7 +36,13 @@ class TCP_Client:
             message = data.split(' ')
             if message[1] == 'proceed' and message[2] == self.congestion:
                 print 'Server acknowledges TCP ' + self.congestion + '.'
-                self.spam();
+                self.spam()
+            elif message[1] == 'proceed' and message[2] != self.congestion:
+                substring = message[2][:len(self.congestion)]
+                if self.congestion == substring:
+                    print 'The server has renamed this client from ' + self.congestion + ' to ' + message[2] + '.'
+                    self.congestion = message[2]
+                    self.spam()
             else:
                 print 'Server responded incorrectly: ' + str(message)
 
