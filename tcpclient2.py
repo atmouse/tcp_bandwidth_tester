@@ -34,15 +34,9 @@ class TCP_Client:
             #client waits for server reply
             data = self.socket.recv(self.size)
             message = data.split(' ')
-            if message[1] == 'proceed' and message[2] == self.congestion:
-                print 'Server acknowledges TCP ' + self.congestion + '.'
+            if message[1] == 'proceed' and message[2] != '':
+                print 'Server acknowledges TCP ' + message[2] + '.'
                 self.spam()
-            elif message[1] == 'proceed' and message[2] != self.congestion:
-                substring = message[2][:len(self.congestion)]
-                if self.congestion == substring:
-                    print 'The server has renamed this client from ' + self.congestion + ' to ' + message[2] + '.'
-                    self.congestion = message[2]
-                    self.spam()
             else:
                 print 'Server responded incorrectly: ' + str(message)
 

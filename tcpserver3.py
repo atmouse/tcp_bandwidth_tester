@@ -29,7 +29,7 @@ import time
 #or write to, a single thread.
 global amount
 global bandwidth
-global client_numbers
+#global client_active
 
 def isOpen(ip,port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,6 +51,7 @@ class Server:
   def open_socket(self):
     try:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)        
         a = self.socket.bind((self.host, self.port))
         b = self.socket.listen(self.backlog)
     except socket.error, (value, message):
@@ -92,41 +93,29 @@ class Client(threading.Thread): #client thread
   def __init__(self, (client, address)):
     threading.Thread.__init__(self) 
     self.client = client #the socket
+    self.ip = address[0] #ip address
     self.size = 1024 #the message size
     self.username = None
     self.running = 1 #running state variable
-    self.key = ''
+    self.congestion = ''
+    self.name = '' #uniquely identifies the client
 
   def run(self):
 
     #wait for client to indicate its type of congestion control
     data = self.client.recv(self.size)
     message = data.split(' ')
-    key = message[1]
+    self.congestion = message[1]
     print 'New client created.'
-    print 'Type of Congestion Control: ' + key
+    print 'Type of Congestion Control: ' + self.congestion
 
-    #check if a client of this key type already exists
-    value = bandwidth.get(key, -1)
-    if value == -1:
-        #client of this type does not already exist
-        self.key = key
-        bandwidth[self.key] = 0
-        amount[self.key] = 0
-        client_numbers[self.key] = 1
-    else:
-        #client of this type already exists
-        print 'Additional TCP ' + key + ' client connected.'
-        client_numbers[key] += 1
-        num = client_numbers[key]
-        new_name = key + '_' + str(num)
-        print 'The new TCP ' + key + 'client has been renamed to ' + new_name + '.'
-        self.key = new_name
-        bandwidth[self.key] = 0
-        amount[self.key] = 0
+    self.name = self.congestion + '-' + self.ip
+    bandwidth[self.name] = 0
+    amount[self.name] = 0
+    #client_active[self.name] = 1
 
-    self.client.send('* proceed ' + self.key)
-    print 'New TCP ' + self.key + ' client will commence sending data.'
+    self.client.send('* proceed ' + self.name)
+    print 'New TCP ' + self.name + ' client will commence sending data.'
 
     while self.running:
         try:
@@ -136,9 +125,11 @@ class Client(threading.Thread): #client thread
           pass
 
         if data:
-            amount[self.key] += len(data)
+            amount[self.name] += len(data)
         else:
-            amount[self.key] = 0
+            print 'TCP ' + self.name + ' client has terminated.'
+            amount[self.name] = 0
+            #client_active[self.name] = 0
             self.client.close() #close socket
             self.running = 0
 
@@ -204,6 +195,7 @@ class GraphWindow():
                         lines = []
                         names = []
                         for i in self.y:
+                            #if client_active[i] == 1:
                             y, l = self.y[i]
                             names.append(i)
                             lines.append(l)
@@ -238,8 +230,8 @@ if __name__ == "__main__":
 
     amount = {}
     bandwidth = {}
-    client_numbers = {}
-  
+    #client_active = {} 
+
     try:
       port = sys.argv[1]
     except:
