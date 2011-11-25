@@ -17,12 +17,14 @@ class TCP_Client:
     def start(self):
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-          
-            #set congestion conrol algorithm
-            socket.TCP_CONGESTION = 13
-            self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, self.congestion)
-            temp = self.socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, 10)
-            print 'Congestion control used for this TCP connection set to: ' + str(temp)
+            try: 
+                #set congestion conrol algorithm
+                socket.TCP_CONGESTION = 13
+                self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, self.congestion)
+                temp = self.socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, 10)
+                print 'Congestion control used for this TCP connection set to: ' + str(temp)
+            except Exception, (value, message):
+                print 'Cannot set socket option.'
 
             self.socket.connect((self.host, self.port))
 

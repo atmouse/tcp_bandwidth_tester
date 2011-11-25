@@ -75,12 +75,8 @@ class Server:
                 self.threads.append(c)
 
             elif s == sys.stdin:
-                # handle standard input
+                #handle standard input
                 line = sys.stdin.readline()
-                #if line.strip() == 'q':
-                #  running = 0
-                #else:
-                #  print "Type 'q' to stop the server"
                 print 'Press "quit" on the graphing window to quit the server.\n'
 
     print 'Received signal to stop'
@@ -93,7 +89,6 @@ class Server:
 
 class Client(threading.Thread): #client thread
   def __init__(self, (client, address)):
-    #key is the specific congestion control algorithm this client is associated with.
     threading.Thread.__init__(self) 
     self.client = client #the socket
     self.size = 1024 #the message size
@@ -140,16 +135,20 @@ class Client(threading.Thread): #client thread
 class GraphWindow():
 
         def __init__(self, master):
+                #ion() #animated graphing
+
                 # Instantiate figure and plot
                 self.f = Figure(figsize=(5,4), dpi=100)
-                self.legend = False
 
                 #available colours for graphing
                 self.colours = ['#FF0000', '#330000', '#339900', '#0066CC', '#990099']
 
-                self.ax1 = self.f.add_subplot(111)
+                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (MB)', xticks=[], autoscaley_on=True)
+                self.ax1.grid(True) #Show a grid on the plot axes
+                self.max_y = 140
+                self.ax1.axis(array([0, 100, 0, self.max_y]))
                 self.x = arange(0, 100, 1)
-                self.y = {} #dictionary of y-data as a list, and graph colour, stored together as a tuple
+                self.y = {} #dictionary of y-data as a list, and a line, stored together as a tuple
 
                 # Instantiate canvas
                 self.canvas = canvas = FigureCanvasTkAgg(self.f, master)
@@ -171,33 +170,35 @@ class GraphWindow():
 
         def __call__(self):
                 keys = bandwidth.keys()
-                self.ax1.clear()
-                #self.legend = True
-
-                line_handle = []
 
                 for i in keys:
                     try:
-                        speed = bandwidth[i]/(1000*1000) 
+                        speed = bandwidth[i]/(1000*1000.) 
                         self.y[i][0].pop(0)
                         self.y[i][0].append(speed)
-                        l = self.ax1.plot(self.x, self.y[i][0], self.y[i][1])
-                        line_handle.append(l)
+                        if speed > self.max_y:
+                            self.max_y = speed
+                            self.ax1.axis(array([0, 100, 0, self.max_y]))
+                        self.y[i][1].set_ydata(self.y[i][0])
                     except KeyError:
                         y = []
                         while len(y) < 100:
                             y.append(0)
-                        c = self.colours[0]
-                        self.colours.pop(0)
-                        self.y[i] = (y, c)
-                        #self.legend = False
-                        l = self.ax1.plot(self.x, self.y[i][0], self.y[i][1])
-                        line_handle.append(l)
-                        self.legend = True
+                        c = self.colours[-1]
+                        self.colours.pop()
+                        l, = self.ax1.plot(self.x, y, c)
+                        self.ax1.axis(array([0, 100, 0, self.max_y]))
+                        self.y[i] = (y, l)
+                        self.y[i][1].set_ydata(y)
+                        
+                        lines = []
+                        names = []
+                        for i in self.y:
+                            y, l = self.y[i]
+                            names.append(i)
+                            lines.append(l)
 
-                #if len(keys) > 1 and self.legend:
-                if self.legend:
-                    self.ax1.legend(line_handle, keys, 'upper left')
+                        self.ax1.legend(lines, names, 'upper left')
                  
                 self.canvas.show()
 
@@ -236,15 +237,15 @@ if __name__ == "__main__":
 
     s = Server(int(port))
     t = threading.Thread(target = s.run)
-    t.setDaemon(True) #TODO changed from False
+    t.setDaemon(True)
     t.start()
 
     #graphing gui stuff
     root = Tk.Tk()
-    root.wm_title("Embedding in TK")
+    root.wm_title("TCP Bandwidth Tester")
     graph = GraphWindow(root)
     update = UpdatePlot(graph)
-    update.setDaemon(True) #TODO works?
+    update.setDaemon(True)
     update.start()
 
     Tk.mainloop()
