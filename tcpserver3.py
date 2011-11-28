@@ -23,6 +23,7 @@ import select
 import socket
 import threading
 import time
+from contextlib import contextmanager
 
 #Dictionaries are thread safe. Threads might access old values depending on execution order,
 #but corrupt values will not result. Also, in this case, each thread will only ever read from,
@@ -30,6 +31,14 @@ import time
 global amount
 global bandwidth
 #global client_active
+#global filename
+
+@contextmanager
+def closing(thing):
+    try:
+        yield thing
+    finally:
+        thing.close()
 
 def isOpen(ip,port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -81,13 +90,21 @@ class Server:
                 line = sys.stdin.readline()
                 print 'Press "quit" on the graphing window to quit the server.\n'
 
-    print 'Received signal to stop'
+    #print 'Received signal to stop'
 
-    self.socket.close()
+    #self.socket.close()
 
-    for c in self.threads:
-        c.running = 0
-        c.join()
+    #keys = bandwidth.keys()
+    #new_line = ''
+    #for i in keys:
+    #    new_line += i + ' '
+
+    #with closing(file(filename + '_header', 'w')) as f:
+    #    f.write(new_line)
+
+    #for c in self.threads:
+    #    c.running = 0
+    #    c.join()
 
 class Client(threading.Thread): #client thread
   def __init__(self, (client, address)):
@@ -144,7 +161,7 @@ class GraphWindow():
                 #available colours for graphing
                 self.colours = ['#FF0000', '#330000', '#339900', '#0066CC', '#990099']
 
-                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (MB)', xticks=[], autoscaley_on=True)
+                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (MB)', xticks=[])
                 self.ax1.grid(True) #Show a grid on the plot axes
                 self.max_y = 140
                 self.ax1.axis(array([0, 100, 0, self.max_y]))
@@ -174,7 +191,7 @@ class GraphWindow():
 
                 for i in keys:
                     try:
-                        speed = bandwidth[i]/(1000*1000.) 
+                        speed = bandwidth[i]
                         self.y[i][0].pop(0)
                         self.y[i][0].append(speed)
                         if speed > self.max_y:
@@ -201,7 +218,13 @@ class GraphWindow():
                             lines.append(l)
 
                         self.ax1.legend(lines, names, 'upper left')
-                 
+                        
+                        #headers = ''
+                        #for i in names:
+                        #    headers += i + ' '
+                        #with closing(file(filename + '_header', 'w')) as f:
+                        #    f.write(headers)
+                
                 self.canvas.show()
 
 class UpdatePlot(threading.Thread):
@@ -211,10 +234,10 @@ class UpdatePlot(threading.Thread):
         self.running = 1
 
     def run(self):
+        amount_now = {}
         while (self.running):
             start = 0 
             end = 0
-            amount_now = {}
             keys = bandwidth.keys()
             start = time.time()
             time.sleep(1)
@@ -222,8 +245,15 @@ class UpdatePlot(threading.Thread):
                  amount_now[i] = amount[i]
                  amount[i] = 0
             end = time.time()
+            #data = ''
             for i in keys:
-                 bandwidth[i] = amount_now[i]/(end - start)
+                 bandwidth[i] = (amount_now[i]/(end - start))/(1000*1000.)
+                 #data += str(bandwidth[i]) + ' '
+            #new_line = data + '\n'
+            #using a context manager looks unseemly, but it in this case it prevents
+            #a segmentation fault when the daemon thread is terminated
+            #with closing(file(filename + '_data', 'a')) as f:
+            #    f.write(new_line)
             self.function()
 
 if __name__ == "__main__":
@@ -234,7 +264,9 @@ if __name__ == "__main__":
 
     try:
       port = sys.argv[1]
+      #filename = sys.argv[2]
     except:
+      #print '<port> <filename>'
       print '<port>'
       sys.exit(0)
 
