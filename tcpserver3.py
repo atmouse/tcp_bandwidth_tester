@@ -152,7 +152,7 @@ class Client(threading.Thread): #client thread
 
 class GraphWindow():
 
-        def __init__(self, master):
+        def __init__(self, master, filename):
                 #ion() #animated graphing
 
                 # Instantiate figure and plot
@@ -160,8 +160,9 @@ class GraphWindow():
 
                 #available colours for graphing
                 self.colours = ['#FF0000', '#330000', '#339900', '#0066CC', '#990099']
+                self.filename = filename
 
-                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (MB)', xticks=[])
+                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (MB)', xticks=[], yticks=arange(0, 300, 10))
                 self.ax1.grid(True) #Show a grid on the plot axes
                 self.max_y = 140
                 self.ax1.axis(array([0, 100, 0, self.max_y]))
@@ -192,8 +193,15 @@ class GraphWindow():
                 for i in keys:
                     try:
                         speed = bandwidth[i]
+                        speed = speed / (1000 * 1000.)
+
+                        #if i has not been added to the y data, the except block will add it.
                         self.y[i][0].pop(0)
                         self.y[i][0].append(speed)
+
+                        with closing(file(self.filename + '_' + i, 'a')) as f:
+                            f.write(str(bandwidth[i]) + '\n')
+
                         if speed > self.max_y:
                             self.max_y = speed
                             self.ax1.axis(array([0, 100, 0, self.max_y]))
@@ -247,7 +255,7 @@ class UpdatePlot(threading.Thread):
             end = time.time()
             #data = ''
             for i in keys:
-                 bandwidth[i] = (amount_now[i]/(end - start))/(1000*1000.)
+                 bandwidth[i] = (amount_now[i]/(end - start))
                  #data += str(bandwidth[i]) + ' '
             #new_line = data + '\n'
             #using a context manager looks unseemly, but it in this case it prevents
@@ -264,10 +272,10 @@ if __name__ == "__main__":
 
     try:
       port = sys.argv[1]
-      #filename = sys.argv[2]
+      filename = sys.argv[2]
     except:
-      #print '<port> <filename>'
-      print '<port>'
+      print '<port> <filename>'
+      #print '<port>'
       sys.exit(0)
 
     s = Server(int(port))
@@ -278,7 +286,7 @@ if __name__ == "__main__":
     #graphing gui stuff
     root = Tk.Tk()
     root.wm_title("TCP Bandwidth Tester")
-    graph = GraphWindow(root)
+    graph = GraphWindow(root, filename)
     update = UpdatePlot(graph)
     update.setDaemon(True)
     update.start()

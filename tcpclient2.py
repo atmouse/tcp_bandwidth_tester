@@ -52,6 +52,7 @@ class TCP_Client:
           self.socket.send(message)
         except socket.error:
           print "Error, send request failed"
+          self.socket.close()
           sys.exit(1)
          
     def spam(self):
