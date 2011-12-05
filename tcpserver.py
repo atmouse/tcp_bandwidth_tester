@@ -1,20 +1,42 @@
 #!/usr/bin/env python
 
-'''A TCP server for receiving data from client.'''
+'''
+    A TCP server for receiving data from client.
+    
+    Code for gui-thread interaction based heavily on examples as found at
+    https://www.esclab.tw/wiki/index.php/Matplotlib#Asynchronous_plotting_with_threads
+'''
+
+import matplotlib
+matplotlib.use('TkAgg')
+ 
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.figure import Figure
+ 
+import Tkinter as Tk
+import sys 
 
 from pylab import *
 from numpy import *
 
 import select
 import socket
-import sys
 import threading
-import os
-import pickle
 import time
-import datetime
+from contextlib import contextmanager
 
+#Dictionaries are thread safe. Threads might access old values depending on execution order,
+#but corrupt values will not result. Also, in this case, each thread will only ever read from,
+#or write to, a single thread.
 global amount
+global bandwidth
+
+@contextmanager
+def closing(thing):
+    try:
+        yield thing
+    finally:
+        thing.close()
 
 def isOpen(ip,port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,14 +54,14 @@ class Server:
     self.size = 1024
     self.socket = None
     self.threads = []
-    amount[0] = 0
 
   def open_socket(self):
     try:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        a = self.socket.bind((self.host,self.port))
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)        
+        a = self.socket.bind((self.host, self.port))
         b = self.socket.listen(self.backlog)
-    except socket.error, (value,message):
+    except socket.error, (value, message):
         if self.socket:
             self.socket.close()
         print "Could not open socket: " + message
@@ -62,48 +84,37 @@ class Server:
                 self.threads.append(c)
 
             elif s == sys.stdin:
-                # handle standard input
+                #handle standard input
                 line = sys.stdin.readline()
-                if line.strip() == 'q':
-                  running = 0
-                else:
-                  print "Type 'q' to stop the server"
-
-    print 'Received signal to stop'
-
-    self.socket.close()
-
-    for c in self.threads:
-        c.running = 0
-        c.join()
-
-class BandwidthMonitor(threading.Thread):
-  def __init__(self):
-    self.start = 0
-    self.end = 0
-    self.amount_now = 0
-
-  def initiate(self):
-    self.start = time.time()
-
-  def terminate(self):
-    self.amount_now = amount[0]
-    amount[0] = 0
-    self.end = time.time()
-
-  def get_bandwidth(self):
-    return self.amount_now/(self.end-self.start)
+                print 'Press "quit" on the graphing window to quit the server.\n'
 
 class Client(threading.Thread): #client thread
-  def __init__(self,(client,address)):
+  def __init__(self, (client, address)):
     threading.Thread.__init__(self) 
     self.client = client #the socket
-    self.address = address #the address
+    self.ip = address[0] #ip address
     self.size = 1024 #the message size
     self.username = None
     self.running = 1 #running state variable
+    self.congestion = ''
+    self.name = '' #uniquely identifies the client
 
   def run(self):
+
+    #wait for client to indicate its type of congestion control
+    data = self.client.recv(self.size)
+    message = data.split(' ')
+    self.congestion = message[1]
+    print 'New client created.'
+    print 'Type of Congestion Control: ' + self.congestion
+
+    self.name = self.congestion + '-' + self.ip
+    bandwidth[self.name] = 0
+    amount[self.name] = 0
+
+    self.client.send('* proceed ' + self.name)
+    print 'New TCP ' + self.name + ' client will commence sending data.'
+
     while self.running:
         try:
           data = self.client.recv(self.size)
@@ -112,62 +123,137 @@ class Client(threading.Thread): #client thread
           pass
 
         if data:
-          amount[0] += len(data)
+            amount[self.name] += len(data)
         else:
-            amount[0] = 0
-            self.client.close()
+            print 'TCP ' + self.name + ' client has terminated.'
+            amount[self.name] = 0
+            self.client.close() #close socket
             self.running = 0
+
+class GraphWindow():
+
+        def __init__(self, master, filename):
+                #ion() #animated graphing
+
+                # Instantiate figure and plot
+                self.f = Figure(figsize=(5,4), dpi=100)
+
+                #available colours for graphing
+                self.colours = ['#FF0000', '#330000', '#339900', '#0066CC', '#990099']
+                self.filename = filename
+
+                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (MB)', xticks=[], yticks=arange(0, 300, 10))
+                self.ax1.grid(True) #Show a grid on the plot axes
+                self.max_y = 140
+                self.ax1.axis(array([0, 100, 0, self.max_y]))
+                self.x = arange(0, 100, 1)
+                self.y = {} #dictionary of y-data as a list, and a line, stored together as a tuple
+
+                # Instantiate canvas
+                self.canvas = canvas = FigureCanvasTkAgg(self.f, master)
+
+                # Pack canvas into root window
+                canvas.get_tk_widget().pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+                # canvas._tkcanvas.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+
+                # Instantiate and pack toolbar
+                self.toolbar = toolbar = NavigationToolbar2TkAgg(canvas, master)
+
+                # Instantiate and pack quit button
+                self.button = button = Tk.Button(master, text='Quit', command=sys.exit)
+                button.pack(side=Tk.BOTTOM)
+
+                # Show canvas and toolbar
+                toolbar.update()
+                canvas.show()
+
+        def __call__(self):
+                keys = bandwidth.keys()
+
+                for i in keys:
+                    try:
+                        speed = bandwidth[i]
+                        speed = speed / (1000 * 1000.)
+
+                        #if i has not been added to the y data, the except block will add it.
+                        self.y[i][0].pop(0)
+                        self.y[i][0].append(speed)
+
+                        with closing(file(self.filename + '_' + i, 'a')) as f:
+                            f.write(str(bandwidth[i]) + '\n')
+
+                        if speed > self.max_y:
+                            self.max_y = speed
+                            self.ax1.axis(array([0, 100, 0, self.max_y]))
+                        self.y[i][1].set_ydata(self.y[i][0])
+                    except KeyError:
+                        y = []
+                        while len(y) < 100:
+                            y.append(0)
+                        c = self.colours[-1]
+                        self.colours.pop()
+                        l, = self.ax1.plot(self.x, y, c)
+                        self.ax1.axis(array([0, 100, 0, self.max_y]))
+                        self.y[i] = (y, l)
+                        self.y[i][1].set_ydata(y)
+                        
+                        lines = []
+                        names = []
+                        for i in self.y:
+                            y, l = self.y[i]
+                            names.append(i)
+                            lines.append(l)
+
+                        self.ax1.legend(lines, names, 'upper left')
+                        
+                self.canvas.show()
+
+class UpdatePlot(threading.Thread):
+    def __init__(self, function):
+        threading.Thread.__init__(self) 
+        self.function = function
+        self.running = 1
+
+    def run(self):
+        amount_now = {}
+        while (self.running):
+            start = 0 
+            end = 0
+            keys = bandwidth.keys()
+            start = time.time()
+            time.sleep(1)
+            for i in keys:
+                 amount_now[i] = amount[i]
+                 amount[i] = 0
+            end = time.time()
+            for i in keys:
+                 bandwidth[i] = (amount_now[i]/(end - start))
+            self.function()
 
 if __name__ == "__main__":
 
-  amount = []
-  amount.append(0)
-  
-  try:
-    port = sys.argv[1]  
-  except:
-    print '<port>'
-    sys.exit(0)
+    amount = {}
+    bandwidth = {}
 
-  s = Server(int(port))
-  t = threading.Thread(target = s.run)
-  t.setDaemon(False)
-  t.start()
-  print 'Starting Bandwidth monitor'
+    try:
+      port = sys.argv[1]
+      filename = sys.argv[2]
+    except:
+      print '<port> <filename>'
+      sys.exit(0)
 
-  b = BandwidthMonitor()    
-  x = arange(0,100,1)
-  y = []
-   
-  ion() #animated graphing
+    s = Server(int(port))
+    t = threading.Thread(target = s.run)
+    t.setDaemon(True)
+    t.start()
 
-  while len(y) < 100:
-    y.append(0)
+    #graphing gui stuff
+    root = Tk.Tk()
+    root.wm_title("TCP Bandwidth Tester")
+    graph = GraphWindow(root, filename)
+    update = UpdatePlot(graph)
+    update.setDaemon(True)
+    update.start()
 
-  current_speed = 140
-  line, = plot(x,y,'g')
-  axis(array([0, 100, 0, current_speed]))
+    Tk.mainloop()
 
-  xticks([])
-  grid('on')
-  title('TCP')
-  ylabel('Throughput (MB)')
-  xlabel('Time (s)')
-
-  axis(array([0, 100, 0, 200]))
-
-  while 1:
-    b.initiate()
-    time.sleep(1)
-    b.terminate()
-    speed = b.get_bandwidth()/(1000*1000) 
-
-    if speed > current_speed:
-        current_speed = speed + 40
-	axis(array([0, 100, 0, current_speed]))
-
-    print str(speed) + ' MBytes/second'
-    y.pop(0)
-    y.append(speed)
-    line.set_ydata(y)
-    draw()

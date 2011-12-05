@@ -14,17 +14,31 @@ class TCP_Client:
         self.socket = None
         self.congestion = cong #congestion control to be used, also used to identify client
 
-    def open_socket(self):
+    def start(self):
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-          
-            #set congestion conrol algorithm
-            socket.TCP_CONGESTION = 13
-            self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, self.congestion)
-            temp = self.socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, 10)
-            print 'Congestion control used for this TCP connection set to: ' + str(temp)
+            try: 
+                #set congestion conrol algorithm
+                socket.TCP_CONGESTION = 13
+                self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, self.congestion)
+                temp = self.socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, 10)
+                print 'Congestion control used for this TCP connection set to: ' + str(temp)
+            except Exception, (value, message):
+                print 'Cannot set socket option. The TCP client must be launched with sudo rights'
 
             self.socket.connect((self.host, self.port))
+
+            #client identifies itself to server
+            self.send("# " + self.congestion)
+
+            #client waits for server reply
+            data = self.socket.recv(self.size)
+            message = data.split(' ')
+            if message[1] == 'proceed' and message[2] != '':
+                print 'Server acknowledges TCP ' + message[2] + '.'
+                self.spam()
+            else:
+                print 'Server responded incorrectly: ' + str(message)
 
         except socket.error, (value, message):
           print "Error: " + message
@@ -38,6 +52,7 @@ class TCP_Client:
           self.socket.send(message)
         except socket.error:
           print "Error, send request failed"
+          self.socket.close()
           sys.exit(1)
          
     def spam(self):
@@ -55,12 +70,12 @@ if __name__ == '__main__':
     try:
         ip = sys.argv[1]
         host = sys.argv[2]
+        congestion = sys.argv[3]
     except IndexError:
-        print '<ip> <port>'
+        print '<ip> <port> <congestion control>'
         sys.exit(0)
 
     print "Starting TCP client"
 
-    c = TCP_Client(ip, int(host))
-    c.open_socket()
-    c.spam()
+    c = TCP_Client(ip, int(host), congestion)
+    c.start()

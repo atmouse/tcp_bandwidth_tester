@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import matplotlib
 matplotlib.use('TkAgg')
  
@@ -24,7 +26,7 @@ class GraphWindow():
                 #available colours for graphing
                 self.colours = ['#FF0000', '#330000', '#339900', '#0066CC', '#990099']
 
-                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (MB)', xticks=[])
+                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (MB)', yticks=arange(0, 300, 10))
                 self.ax1.grid(True) #Show a grid on the plot axes
 
                 # Instantiate canvas
@@ -53,8 +55,7 @@ class GraphWindow():
                     f = open(i, 'r')
                     data.append([])
                     for line in f:
-                        line.strip()
-                        data[-1].append(float(line))
+                        data[-1].append(float(line.strip()))
                     f.close()
 
                 max_length = 0
@@ -92,7 +93,7 @@ if __name__ == '__main__':
     data_files = []
 
     for i in listing:
-        if (filename in i):
+        if (filename in i[:len(filename)]):
             data_files.append(i)
 
     if not (len(data_files) > 0):
