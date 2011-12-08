@@ -1,5 +1,15 @@
 #!/usr/bin/env python2
 
+'''
+    Example code taken from http://pylibpcap.sourceforge.net/ which demonstrates
+    a packet sniffer written in python using the python-libpcap wrapper for the 
+    libpcap library.
+
+    Other links I found useful:
+    http://systhread.net/texts/200805lpcap1.php
+    http://www.tcpdump.org/pcap3_man.html
+'''
+
 import pcap
 import sys
 import string
@@ -30,6 +40,13 @@ def decode_ip_packet(s):
   else:
     d['options']=None
   d['data']=s[4*d['header_len']:]
+
+  #The difference between ntohs and ntohl is the difference between 16bit and 32bit integers.
+  d['source_port'] = socket.ntohs(struct.unpack('H',s[20:22])[0])
+  d['destination_port'] = socket.ntohs(struct.unpack('H',s[22:24])[0])
+  d['sequence_number'] = socket.ntohl(struct.unpack('I',s[24:28])[0])
+  d['ack_number'] = socket.ntohl(struct.unpack('I',s[28:32])[0])
+
   return d
 
 
@@ -52,7 +69,7 @@ def print_packet(pktlen, data, timestamp):
                              decoded['source_address'],
                              decoded['destination_address'])
     for key in ['version', 'header_len', 'tos', 'total_len', 'id',
-                'flags', 'fragment_offset', 'ttl']:
+                'flags', 'fragment_offset', 'ttl', 'source_port', 'destination_port', 'sequence_number', 'ack_number']:
       print '  %s: %d' % (key, decoded[key])
     print '  protocol: %s' % protocols[decoded['protocol']]
     print '  header checksum: %d' % decoded['checksum']
