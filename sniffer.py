@@ -26,8 +26,14 @@ protocols={socket.IPPROTO_TCP:'tcp',
            socket.IPPROTO_UDP:'udp',
            socket.IPPROTO_ICMP:'icmp'}
 
-dest_ip = ''
-local_ip = ''
+global dest_ip
+global local_ip
+#global times
+#global g_sequence
+#global g_waiting
+#global g_start
+#global g_stop
+global g_dict
 
 def get_ip_address(ifname):
   '''
@@ -49,6 +55,7 @@ def get_ip_address(ifname):
 
 def decode_ip_packet(s):
   d={}
+  #---IP Header---
   #d['version']=(ord(s[0]) & 0xf0) >> 4
   #d['header_len']=ord(s[0]) & 0x0f
   #d['tos']=ord(s[1])
@@ -67,6 +74,7 @@ def decode_ip_packet(s):
   #  d['options']=None
   #d['data']=s[4*d['header_len']:]
 
+  #---TCP Header---
   #The difference between ntohs and ntohl is the difference between 16bit and 32bit integers.
   #d['source_port'] = socket.ntohs(struct.unpack('H',s[20:22])[0])
   #d['destination_port'] = socket.ntohs(struct.unpack('H',s[22:24])[0])
@@ -76,20 +84,48 @@ def decode_ip_packet(s):
   return d
 
 def handle_packet(pktlen, data, timestamp):
+
   if not data:
     return
 
   if data[12:14]=='\x08\x00':
     decoded = decode_ip_packet(data[14:])
-    print '\n%s.%f %s > %s' % (time.strftime('%H:%M',
-                                           time.localtime(timestamp)),
-                             timestamp % 60,
-                             decoded['source_address'],
-                             decoded['destination_address'])
-    for key in ['sequence_number', 'ack_number']:
-      print '  %s: %d' % (key, decoded[key])
-    print '  protocol: %s' % protocols[decoded['protocol']]
+    #print '\n%s.%f %s > %s' % (time.strftime('%H:%M',
+    #                                       time.localtime(timestamp)),
+    #                         timestamp % 60,
+    #                         decoded['source_address'],
+    #                         decoded['destination_address'])
+    #for key in ['sequence_number', 'ack_number']:
+    #  print '  %s: %d' % (key, decoded[key])
+    #print '  protocol: %s' % protocols[decoded['protocol']]
 
+    if not g_dict['waiting']:
+        #a packet goes out, time it
+        if decoded['destination_address'] == g_dict['dest_ip'] and decoded['source_address'] == g_dict['local_ip']:
+            if decoded['ack_number'] == 0:
+                #TODO is this really a good way of ensuring that this outbound packet is not itself an ack?
+                g_dict['start_time'] = time.time()
+                g_dict['waiting'] = 1
+                g_dict['sequence_number'] = decoded['sequence_number']
+    elif g_dict['waiting']:
+        #waiting for packets 
+        if decoded['destination_address'] == g_dict['local_ip'] and decoded['source_address'] == g_dict['dest_ip']:
+            #an incoming packet, check if it is the expected ack
+            if decoded['ack_number'] == g_dict['sequence_number']+1:
+                #this is the expected ack
+                g_dict['end_time'] = time.time()
+                g_dict['waiting'] = 0
+                diff = g_dict['end_time'] - g_dict['start_time']
+                g_dict['times'].append(diff)
+                print 'hit'
+            elif decoded['ack_number'] == g_dict['sequence_number']:
+                #this is not the expected ack, a timeout occurred, and the packet is being retransmitted
+                #TODO test if this really happens
+                print 'timeout'
+                g_dict['start_time'] = time.time()
+                g_dict['waiting'] = 1
+                g_dict['sequence_number'] = decoded['sequence_number']
+    
 if __name__=='__main__':
   if len(sys.argv) == 4:
     #dev = pcap.lookupdev()
@@ -100,11 +136,30 @@ if __name__=='__main__':
     print 'usage: <dev> <ip> <expr>'
     sys.exit(0)
 
+  #times = []
+  #g_sequence = 0
+  #g_waiting = 0
+  #g_start = 0.
+  #g_stop = 0.
+  g_dict = {}
+  #g_dict['times'] = []
+  #g_dict['sequence_number'] = 0
+  #g_dict['start_time'] = 0.
+  #g_dict['end_time'] = 0.
+
   p = pcap.pcapObject()
   net, mask = pcap.lookupnet(dev)
 
   local_ip = get_ip_address(dev)
   print 'This machine\'s ip is: ' + str(local_ip)
+
+  g_dict['waiting'] = 0
+  g_dict['times'] = []
+  g_dict['sequence_number'] = 0
+  g_dict['start_time'] = 0.
+  g_dict['end_time'] = 0.
+  g_dict['dest_ip'] = dest_ip
+  g_dict['local_ip'] = local_ip
 
   # note:  to_ms does nothing on linux
   p.open_live(dev, 1600, 0, 100)
@@ -117,7 +172,7 @@ if __name__=='__main__':
   #p.setnonblock(1)
   try:
     while 1:
-      p.dispatch(1, handle_packet)
+      g = p.dispatch(1, handle_packet)
 
     # specify 'None' to dump to dumpfile, assuming you have called
     # the dump_open method
@@ -133,4 +188,6 @@ if __name__=='__main__':
     print '%s' % sys.exc_type
     print 'shutting down'
     print '%d packets received, %d packets dropped, %d packets dropped by interface' % p.stats()
+    print 'Recorded Times: '
+    print g_dict['times']
 
