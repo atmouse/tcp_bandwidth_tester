@@ -102,7 +102,7 @@ def handle_packet(pktlen, data, timestamp):
     if not g_dict['waiting']:
         #a packet goes out, time it
         if decoded['destination_address'] == g_dict['dest_ip'] and decoded['source_address'] == g_dict['local_ip']:
-            if decoded['ack_number'] == 0:
+            if decoded['ack_number'] == 0 or True:
                 #TODO is this really a good way of ensuring that this outbound packet is not itself an ack?
                 g_dict['start_time'] = time.time()
                 g_dict['waiting'] = 1
@@ -125,6 +125,11 @@ def handle_packet(pktlen, data, timestamp):
                 g_dict['start_time'] = time.time()
                 g_dict['waiting'] = 1
                 g_dict['sequence_number'] = decoded['sequence_number']
+            else:
+                print 'unknown:'
+                print decoded['ack_number']
+                print decoded['sequence_number']
+                print '\n'
     
 if __name__=='__main__':
   if len(sys.argv) == 4:
