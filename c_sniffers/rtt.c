@@ -18,6 +18,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518
@@ -29,6 +30,14 @@
 #define ETHER_ADDR_LEN	6
 
 /* Ethernet header */
+
+int g_waiting = 0;
+u_int g_sequence_num;
+char *g_dest_address = NULL;
+time_t g_start;
+time_t g_end;
+u_int g_size_payload;
+
 struct sniff_ethernet {
         u_char  ether_dhost[ETHER_ADDR_LEN];    /* destination host address */
         u_char  ether_shost[ETHER_ADDR_LEN];    /* source host address */
@@ -126,109 +135,9 @@ return;
 }
 
 /*
- * print data in rows of 16 bytes: offset   hex   ascii
- *
- * 00000   47 45 54 20 2f 20 48 54  54 50 2f 31 2e 31 0d 0a   GET / HTTP/1.1..
- */
-void
-print_hex_ascii_line(const u_char *payload, int len, int offset)
-{
-
-	int i;
-	int gap;
-	const u_char *ch;
-
-	/* offset */
-	printf("%05d   ", offset);
-	
-	/* hex */
-	ch = payload;
-	for(i = 0; i < len; i++) {
-		printf("%02x ", *ch);
-		ch++;
-		/* print extra space after 8th byte for visual aid */
-		if (i == 7)
-			printf(" ");
-	}
-	/* print space to handle line less than 8 bytes */
-	if (len < 8)
-		printf(" ");
-	
-	/* fill hex gap with spaces if not full line */
-	if (len < 16) {
-		gap = 16 - len;
-		for (i = 0; i < gap; i++) {
-			printf("   ");
-		}
-	}
-	printf("   ");
-	
-	/* ascii (if printable) */
-	ch = payload;
-	for(i = 0; i < len; i++) {
-		if (isprint(*ch))
-			printf("%c", *ch);
-		else
-			printf(".");
-		ch++;
-	}
-
-	printf("\n");
-
-return;
-}
-
-/*
- * print packet payload data (avoid printing binary data)
- */
-void
-print_payload(const u_char *payload, int len)
-{
-
-	int len_rem = len;
-	int line_width = 16;			/* number of bytes per line */
-	int line_len;
-	int offset = 0;					/* zero-based offset counter */
-	const u_char *ch = payload;
-
-	if (len <= 0)
-		return;
-
-	/* data fits on one line */
-	if (len <= line_width) {
-		print_hex_ascii_line(ch, len, offset);
-		return;
-	}
-
-	/* data spans multiple lines */
-	for ( ;; ) {
-		/* compute current line length */
-		line_len = line_width % len_rem;
-		/* print line */
-		print_hex_ascii_line(ch, line_len, offset);
-		/* compute total remaining */
-		len_rem = len_rem - line_len;
-		/* shift pointer to remaining bytes to print */
-		ch = ch + line_len;
-		/* add offset */
-		offset = offset + line_width;
-		/* check if we have line width chars or less */
-		if (len_rem <= line_width) {
-			/* print last line and get out */
-			print_hex_ascii_line(ch, len_rem, offset);
-			break;
-		}
-	}
-
-return;
-}
-
-/*
  * dissect/print packet
  */
 void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)    {
-
-	//static int count = 1;                   /* packet counter */
 	
 	/* declare pointers to packet headers */
 	const struct sniff_ethernet *ethernet;  /* The ethernet header [1] */
@@ -239,10 +148,17 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	int size_ip;
 	int size_tcp;
 	int size_payload;
-	
-	//printf("\nPacket number %d:\n", count);
-	//count++;
-	
+
+    //TODO
+    //printf("are these variables really a problem?");
+
+    u_int sequence_num;
+    u_int ack_num;
+    u_short window;
+    float rtt = 0.0;
+    char *src_address;
+    char *dest_address;
+
 	/* define ethernet header */
 	ethernet = (struct sniff_ethernet*)(packet);
 	
@@ -253,15 +169,11 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 		printf("   * Invalid IP header length: %u bytes\n", size_ip);
 		return;
 	}
-
-	/* print source and destination IP addresses */
-	//printf("       From: %s\n", inet_ntoa(ip->ip_src));
-	//printf("         To: %s\n", inet_ntoa(ip->ip_dst));
 	
 	/* determine protocol */	
 	switch(ip->ip_p) {
 		case IPPROTO_TCP:
-			printf("\n      Protocol: TCP\n");
+			//printf("\n      Protocol: TCP\n");
 			break;
 		case IPPROTO_UDP:
 			//printf("   Protocol: UDP\n");
@@ -282,8 +194,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	 */
 	
 	/* print source and destination IP addresses */
-	printf("          From: %s\n", inet_ntoa(ip->ip_src));
-	printf("            To: %s\n", inet_ntoa(ip->ip_dst));
+	//printf("          From: %s\n", inet_ntoa(ip->ip_src));
+	//printf("            To: %s\n", inet_ntoa(ip->ip_dst));
 
 	/* define/compute tcp header offset */
 	tcp = (struct sniff_tcp*) (packet + SIZE_ETHERNET + size_ip);
@@ -293,29 +205,89 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 		return;
 	}
 	
-    u_int flags = tcp->th_flags;
-    u_char ack;
-    ack = CHECK_BIT(flags, 4);
+    //TODO
+    //printf("calculating tcp payload size");
 
-	printf("      Src port: %d\n", ntohs(tcp->th_sport));
-	printf("      Dst port: %d\n", ntohs(tcp->th_dport));
-    //printf("         Flags: %d\n", tcp->th_flags);
-
-    if (ack == 16)  {
-        printf("           ACK: TRUE\n");
-    } else  {
-        printf("           ACK: FALSE\n");
-    }
-    //printf("           ACK: %d\n", ack);
-    printf("Seqence number: %u\n", tcp->th_seq);
-    printf("    ACK number: %u\n", tcp->th_ack);
-	
 	/* define/compute tcp payload (segment) offset */
 	payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
 	
 	/* compute tcp payload (segment) size */
 	size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
-	
+
+	u_int flags = tcp->th_flags;
+	u_char ack;
+	u_char syn;
+	ack = CHECK_BIT(flags, 4);
+    syn = CHECK_BIT(flags, 1);
+
+    src_address = inet_ntoa(ip->ip_src);
+    dest_address = inet_ntoa(ip->ip_dst);
+    window = tcp->th_win;
+    sequence_num = tcp->th_seq;
+    ack_num = tcp->th_ack;
+
+    if (!g_waiting && syn != 2 && size_payload != 0)   {
+        if (strcmp(dest_address, g_dest_address) == 0)   {
+            g_sequence_num = sequence_num;
+
+            printf("Sequence number %u recorded \n", sequence_num);
+            printf("Payload size is: %u\n", size_payload);
+            //printf("Expected ACK number is: %u\n", sequence_num + size_payload);
+            printf("\n");
+
+            g_waiting = 1;
+            g_start = time(NULL);
+            g_size_payload = size_payload;
+        }
+    } else  if (g_waiting && syn != 2 && size_payload == 0)   {
+        if (strcmp(src_address, g_dest_address) == 0)    {
+
+            printf("flag%u\n", ack);
+            printf("Checking ack %u with payload size: %u\n", ack_num, size_payload);
+            printf("Window: %u\n", window);
+
+            if (ack_num == g_sequence_num + g_size_payload)   {
+                //this is the expected ack
+                g_end = time(NULL);
+                rtt = difftime(g_end, g_start);
+                printf("Time: %f\n", rtt);
+
+                //TODO append stop time to an array?
+                g_waiting = 0;
+                printf("\n");
+            } else if (ack_num == g_sequence_num)  {
+                //packet must be resent
+                g_start = time(NULL);
+                printf("Timeout???");
+                g_waiting = 0;
+                printf("\n");
+            } else if (ack_num > g_sequence_num + g_size_payload)   {
+                //printf("Difference is: %u\n", (ack_num - (g_sequence_num + g_size_payload)));
+                g_waiting = 0;
+                //printf("\n");
+            }
+        }
+    }
+
+	//printf("      Src port: %u\n", ntohs(tcp->th_sport));
+	//printf("      Dst port: %u\n", ntohs(tcp->th_dport));
+    //printf("         Flags: %d\n", tcp->th_flags);
+    /*
+    if (ack == 16)
+       	printf("           ACK: TRUE\n");
+    else
+       	printf("           ACK: FALSE\n");
+   	if (syn == 2)  
+       	printf("           SYN: TRUE\n");
+   	else
+       	printf("           SYN: FALSE\n");
+
+   	printf("Seqence number: %u\n", tcp->th_seq);
+   	printf("    ACK number: %u\n", tcp->th_ack);
+	*/
+
+	//printf("  Payload size: %d\n", size_payload);
+
 	/*
 	 * Print payload data; it might be binary, so don't just
 	 * treat it as a string.
@@ -333,7 +305,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 int main(int argc, char **argv)
 {
 
-	char *dev = NULL;			/* capture device name */
+    char *dev = NULL;			/* capture device name */
 	char errbuf[PCAP_ERRBUF_SIZE];		/* error buffer */
 	pcap_t *handle;				/* packet capture handle */
 
@@ -347,13 +319,17 @@ int main(int argc, char **argv)
 
 	/* check for capture device name on command-line */
 	if (argc == 2) {
-		dev = argv[1];
+		//dev = argv[1];
 	}
 	else if (argc > 2) {
+		dev = argv[1];
+        g_dest_address = argv[2];
+	}
+    else if (argc > 3)  {
 		fprintf(stderr, "error: unrecognized command-line options\n\n");
 		print_app_usage();
 		exit(EXIT_FAILURE);
-	}
+    }
 	else {
 		/* find a capture device if not specified on command-line */
 		dev = pcap_lookupdev(errbuf);
