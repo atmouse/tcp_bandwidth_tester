@@ -2,7 +2,7 @@
 #define APP_DESC		"Sniffer example using libpcap"
 #define APP_COPYRIGHT	"Copyright (c) 2005 The Tcpdump Group"
 #define APP_DISCLAIMER	"THERE IS ABSOLUTELY NO WARRANTY FOR THIS PROGRAM."
-#define MAX_SIZE 100
+#define MAX_SIZE 5000
 
 /*
     http://stackoverflow.com/questions/523724/c-c-check-if-one-bit-is-set-in-i-e-int-variable
@@ -42,9 +42,11 @@ u_int g_size_payload = 0;
 u_short g_window_size = 0;
 
 u_int seq_arr[MAX_SIZE];
+u_int ack_arr[MAX_SIZE];
 time_t seq_time_arr[MAX_SIZE];
 time_t ack_time_arr[MAX_SIZE];
-int arr_index = 0;
+int seq_arr_index = 0;
+int ack_arr_index = 0;
 
 struct sniff_ethernet {
         u_char  ether_dhost[ETHER_ADDR_LEN];    /* destination host address */
@@ -163,9 +165,10 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     u_int ack_num;
     u_short window_size;
     float rtt = 0.0;
-    char *src_address;
-    char *dest_address;
+    char src_address[20];
+    char dest_address[20];
     int i = 0;
+    int j = 0;
 
 	/* define ethernet header */
 	ethernet = (struct sniff_ethernet*)(packet);
@@ -181,7 +184,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	/* determine protocol */	
 	switch(ip->ip_p) {
 		case IPPROTO_TCP:
-			printf("\n      Protocol: TCP\n");
+			//printf("\n      Protocol: TCP\n");
 			break;
 		case IPPROTO_UDP:
 			printf("   Protocol: UDP\n");
@@ -227,23 +230,63 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     if (CHECK_BIT(flags, 2) == 2)
         syn = 1;
 
-    src_address = inet_ntoa(ip->ip_src);
-    dest_address = inet_ntoa(ip->ip_dst);
+    strcpy(src_address, inet_ntoa(ip->ip_src));
+    strcpy(dest_address, inet_ntoa(ip->ip_dst));
     window_size = tcp->th_win;
     sequence_num = tcp->th_seq;
     ack_num = tcp->th_ack;
 
-    if (strcmp(dest_address, g_dest_address) == 0)    {
+    //printf("%u\n", ack_num);
+    //printf("%u\n\n", tcp->th_ack);
+
+    if (strcmp(dest_address, g_dest_address) == 0 && size_payload != 0)    {
         //An outgoing packet. Record sequence number and timestamp.
-        seq_time_arr[arr_index] = time(NULL);
-        seq_arr[arr_index] = sequence_num;
+        seq_time_arr[seq_arr_index] = time(NULL);
+        seq_arr[seq_arr_index] = sequence_num;
+        seq_arr_index++;
+        //printf("THIS IS AN OUTGOING PACKET %u\n", seq_arr_index);
+        //printf("%s\n", dest_address);
+        //printf("%s\n\n", src_address);
+        //printf("%s\n", inet_ntoa(ip->ip_dst));
+        //printf("%s\n\n", inet_ntoa(ip->ip_src));
+        //printf("%s\n", g_dest_address);
     }
-    arr_index++;
-    if (arr_index == MAX_SIZE)  {
-        exit(EXIT_FAILURE);
-        for (i=0; i++; i<MAX_SIZE)  {
-            printf("%u\n", seq_arr[i]);
+    if (strcmp(src_address, g_dest_address) == 0 && ack)    {
+        //An incoming packet. Record ack number and timestamp.
+        ack_time_arr[ack_arr_index] = time(NULL);
+        ack_arr[ack_arr_index] = ack_num;
+        ack_arr_index++;
+        //printf("THIS SHOULD BE AN ACK %u\n", seq_arr_index);
+        //printf("%s\n", dest_address);
+        //printf("%s\n\n", src_address);
+    }
+    if (ack_arr_index == MAX_SIZE || seq_arr_index == MAX_SIZE)  {
+        
+        printf("Printing:\n");
+        /*
+        for (i = 0; i < MAX_SIZE; i++)  {
+            printf("%u  :   %u\n", seq_arr[i], ack_arr[i]);
         }
+        */
+        
+        for (i = 0; i < MAX_SIZE; i++)  {
+            for (j = 0; j < MAX_SIZE; j++)  {
+
+                if (ack_arr[j] == 0) {
+                    j = MAX_SIZE;
+                    break;
+                }
+
+                if (ack_arr[j] == seq_arr[i])   {
+                    printf("ACK: %u\n", ack_arr[i]);
+                    printf("TIME: %f\n", difftime(seq_time_arr[i], ack_time_arr[j]));
+                    printf("SEQ_TIME: %lu\n", (unsigned long) seq_time_arr[i]);
+                    printf("ACK_TIME: %lu\n\n", (unsigned long) ack_time_arr[j]);
+                }
+            }
+        }
+        
+        exit(EXIT_SUCCESS);
     }
 
     /*
@@ -307,8 +350,14 @@ int main(int argc, char **argv)
 	bpf_u_int32 mask;			/* subnet mask */
 	bpf_u_int32 net;			/* ip */
 	int num_packets = -1;			/* number of packets to capture */
+    int i = 0;
 
 	print_app_banner();
+
+    for (i = 0; i < MAX_SIZE; i++)  {
+        seq_arr[i] = 0;
+        ack_arr[i] = 0;
+    }
 
 	/* check for capture device name on command-line */
 	if (argc == 2) {
