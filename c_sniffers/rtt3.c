@@ -36,6 +36,7 @@ int g_waiting = 0;
 u_int g_total_data = 0;
 u_int g_sequence_num = 0;
 char *g_dest_address = NULL;
+char *g_src_address = NULL;
 time_t g_start = 0.0;
 time_t g_end = 0.0;
 u_int g_size_payload = 0;
@@ -161,7 +162,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 
     int ack = 0;
     int syn = 0;
-    u_int sequence_num;
+    int fin = 0;
+    u_int seq_num;
     u_int ack_num;
     u_short window_size;
     float rtt = 0.0;
@@ -227,46 +229,64 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     */
     if (CHECK_BIT(flags, 4) == 16)
         ack = 1;
-    if (CHECK_BIT(flags, 2) == 2)
+    else
+        ack = 0;
+    if (CHECK_BIT(flags, 1) == 2)
         syn = 1;
+    else
+        syn = 0;
+    if (CHECK_BIT(flags, 0) == 1)
+        fin = 1;
+    else
+        fin = 0;
 
     strcpy(src_address, inet_ntoa(ip->ip_src));
     strcpy(dest_address, inet_ntoa(ip->ip_dst));
     window_size = tcp->th_win;
-    sequence_num = tcp->th_seq;
+    seq_num = tcp->th_seq;
     ack_num = tcp->th_ack;
 
-    //printf("%u\n", ack_num);
-    //printf("%u\n\n", tcp->th_ack);
-
-    if (strcmp(dest_address, g_dest_address) == 0 && size_payload != 0)    {
-        //An outgoing packet. Record sequence number and timestamp.
-        seq_time_arr[seq_arr_index] = time(NULL);
-        seq_arr[seq_arr_index] = sequence_num;
-        
-        ack_arr[seq_arr_index] = 0;
-        ack_time_arr[seq_arr_index] = 0;
+    if (strcmp(dest_address, g_dest_address) == 0 && strcmp(src_address, g_src_address) == 0 || strcmp(dest_address, g_src_address) == 0 && strcmp(src_address, g_dest_address) == 0)    {
+        //printf("Src     Address     Dest Address    Seq Num     Ack Num     Payload     ack syn fin     Time");
+        printf("%15s -> %15s : %20u %20u %5d %3d %3d %3d %20lu\n", src_address, dest_address, seq_num, ack_num, size_payload, ack, syn, fin, time(NULL));
         seq_arr_index++;
     }
-    if (strcmp(src_address, g_dest_address) == 0 && ack)    {
+
+    //if (strcmp(dest_address, g_dest_address) == 0 && size_payload != 0)    {
+        //An outgoing packet. Record sequence number and timestamp.
+        //seq_time_arr[seq_arr_index] = time(NULL);
+        //seq_arr[seq_arr_index] = sequence_num;
+        
+        //ack_arr[seq_arr_index] = 0;
+        //ack_time_arr[seq_arr_index] = 0;
+
+        //printf("%20u : %20lu : %20u : %20lu\n", seq_arr[seq_arr_index], seq_time_arr[seq_arr_index], ack_arr[seq_arr_index], ack_time_arr[seq_arr_index]);
+
+        //seq_arr_index++;
+    //}
+    //if (strcmp(src_address, g_dest_address) == 0 && ack)    {
         //An incoming packet. Record ack number and timestamp.
         /*
         ack_time_arr[ack_arr_index] = time(NULL);
         ack_arr[ack_arr_index] = ack_num;
         ack_arr_index++;
         */
-        ack_time_arr[seq_arr_index] = time(NULL);
-        ack_arr[seq_arr_index] = ack_num;
-        seq_arr_index++;
-    }
+        //ack_time_arr[seq_arr_index] = time(NULL);
+        //ack_arr[seq_arr_index] = ack_num;
+
+        //printf("%15u : %15lu : %15u : %15lu\n", seq_arr[seq_arr_index], seq_time_arr[seq_arr_index], ack_arr[seq_arr_index], ack_time_arr[seq_arr_index]);
+
+        //seq_arr_index++;
+    //}
+
     if (ack_arr_index == MAX_SIZE || seq_arr_index == MAX_SIZE)  {
-        
+        /*
         printf("Printing:\n");
 
-         for (i = 0; i < MAX_SIZE; i++)  {
+        for (i = 0; i < MAX_SIZE; i++)  {
             printf("%20u : %20lu : %20u : %20lu\n", seq_arr[i], seq_time_arr[i], ack_arr[i], ack_time_arr[i]);
         }
-
+        */
         /*
         for (i = 0; i < MAX_SIZE; i++)  {
             printf("%u  :   %u\n", seq_arr[i], ack_arr[i]);
@@ -375,6 +395,8 @@ int main(int argc, char **argv)
 	else if (argc > 2) {
 		dev = argv[1];
         g_dest_address = argv[2];
+        g_src_address = argv[3];
+        printf("Source address is %s and Destination address is %s\n", g_src_address, g_dest_address);
 	}
     else if (argc > 3)  {
 		fprintf(stderr, "error: unrecognized command-line options\n\n");
@@ -431,6 +453,9 @@ int main(int argc, char **argv)
 		    filter_exp, pcap_geterr(handle));
 		exit(EXIT_FAILURE);
 	}
+
+    printf("Src Address     Dest Address        Seq Num     Ack Num     Payload     ack syn fin     Time\n");
+    printf("\n");
 
 	/* now we can set our callback function */
 	pcap_loop(handle, num_packets, got_packet, NULL);
