@@ -243,32 +243,36 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
         //An outgoing packet. Record sequence number and timestamp.
         seq_time_arr[seq_arr_index] = time(NULL);
         seq_arr[seq_arr_index] = sequence_num;
+        
+        ack_arr[seq_arr_index] = 0;
+        ack_time_arr[seq_arr_index] = 0;
         seq_arr_index++;
-        //printf("THIS IS AN OUTGOING PACKET %u\n", seq_arr_index);
-        //printf("%s\n", dest_address);
-        //printf("%s\n\n", src_address);
-        //printf("%s\n", inet_ntoa(ip->ip_dst));
-        //printf("%s\n\n", inet_ntoa(ip->ip_src));
-        //printf("%s\n", g_dest_address);
     }
     if (strcmp(src_address, g_dest_address) == 0 && ack)    {
         //An incoming packet. Record ack number and timestamp.
+        /*
         ack_time_arr[ack_arr_index] = time(NULL);
         ack_arr[ack_arr_index] = ack_num;
         ack_arr_index++;
-        //printf("THIS SHOULD BE AN ACK %u\n", seq_arr_index);
-        //printf("%s\n", dest_address);
-        //printf("%s\n\n", src_address);
+        */
+        ack_time_arr[seq_arr_index] = time(NULL);
+        ack_arr[seq_arr_index] = ack_num;
+        seq_arr_index++;
     }
     if (ack_arr_index == MAX_SIZE || seq_arr_index == MAX_SIZE)  {
         
         printf("Printing:\n");
+
+         for (i = 0; i < MAX_SIZE; i++)  {
+            printf("%20u : %20lu : %20u : %20lu\n", seq_arr[i], seq_time_arr[i], ack_arr[i], ack_time_arr[i]);
+        }
+
         /*
         for (i = 0; i < MAX_SIZE; i++)  {
             printf("%u  :   %u\n", seq_arr[i], ack_arr[i]);
         }
         */
-        
+        /*
         for (i = 0; i < MAX_SIZE; i++)  {
             for (j = 0; j < MAX_SIZE; j++)  {
 
@@ -276,8 +280,13 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
                     j = MAX_SIZE;
                     break;
                 }
+                
+                else if (seq_arr[i] == 0)    {
+                    i = MAX_SIZE;
+                    break;
+                }
 
-                if (ack_arr[j] == seq_arr[i])   {
+                else if (ack_arr[j] == seq_arr[i])   {
                     printf("ACK: %u\n", ack_arr[i]);
                     printf("TIME: %f\n", difftime(seq_time_arr[i], ack_time_arr[j]));
                     printf("SEQ_TIME: %lu\n", (unsigned long) seq_time_arr[i]);
@@ -285,7 +294,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
                 }
             }
         }
-        
+        */
         exit(EXIT_SUCCESS);
     }
 

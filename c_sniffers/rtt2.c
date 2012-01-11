@@ -157,8 +157,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     u_int ack_num;
     u_short window_size;
     float rtt = 0.0;
-    char *src_address;
-    char *dest_address;
+    char src_address[20];
+    char dest_address[20];
 
 	/* define ethernet header */
 	ethernet = (struct sniff_ethernet*)(packet);
@@ -220,8 +220,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     if (CHECK_BIT(flags, 2) == 2)
         syn = 1;
 
-    src_address = inet_ntoa(ip->ip_src);
-    dest_address = inet_ntoa(ip->ip_dst);
+    strcpy(src_address, inet_ntoa(ip->ip_src));
+    strcpy(dest_address, inet_ntoa(ip->ip_dst));
     window_size = tcp->th_win;
     sequence_num = tcp->th_seq;
     ack_num = tcp->th_ack;
@@ -234,7 +234,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
             printf("Received initial ACK\n");
             printf("The ACK number is: %u\n", ack_num);
             printf("The window size is: %u\n", window_size);
-            printf("Sending should commence now.\n\n")
+            printf("Sending should commence now.\n\n");
         }
     } else if (g_waiting && !syn)  {
         //we have the window size, check outgoing packets, find out when to expect ACK
@@ -246,7 +246,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
             }
             */
             printf("Sending packet\n");
-            printf("Sequence number is: %u\n", seq_num);
+            printf("Sequence number is: %u\n", sequence_num);
             printf("Payload size is: %u\n", size_payload);
             printf("Total data sent: %u\n", g_total_data);
             printf("\n");
@@ -254,7 +254,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
             printf("Received ACK while waiting for window to fill up:");
             printf("The ACK number is: %u\n", ack_num);
             printf("The window size is: %u\n", window_size);
-            printf("Sending should commence now.\n\n")
+            printf("Sending should commence now.\n\n");
         }
     }
 
