@@ -5,7 +5,7 @@
 #define APP_DESC		"Sniffer example using libpcap"
 #define APP_COPYRIGHT	"Copyright (c) 2005 The Tcpdump Group"
 #define APP_DISCLAIMER	"THERE IS ABSOLUTELY NO WARRANTY FOR THIS PROGRAM."
-#define MAX_SIZE 5000
+#define MAX_SIZE 1000
 
 /*
     http://stackoverflow.com/questions/523724/c-c-check-if-one-bit-is-set-in-i-e-int-variable
@@ -35,22 +35,14 @@
 
 /* Ethernet header */
 
-int g_waiting = 0;
-u_int g_total_data = 0;
-u_int g_sequence_num = 0;
 char *g_dest_address = NULL;
 char *g_src_address = NULL;
-time_t g_start = 0.0;
-time_t g_end = 0.0;
-u_int g_size_payload = 0;
-u_short g_window_size = 0;
-
-u_int seq_arr[MAX_SIZE];
-u_int ack_arr[MAX_SIZE];
+unsigned int seq_arr[MAX_SIZE];
+unsigned int ack_arr[MAX_SIZE];
 time_t seq_time_arr[MAX_SIZE];
 time_t ack_time_arr[MAX_SIZE];
-int seq_arr_index = 0;
-int ack_arr_index = 0;
+int seq_counter = 0;
+int ack_counter = 0;
 
 struct sniff_ethernet {
         u_char  ether_dhost[ETHER_ADDR_LEN];    /* destination host address */
@@ -139,13 +131,35 @@ void
 print_app_usage(void)
 {
 
-	printf("Usage: %s [interface]\n", APP_NAME);
-	printf("\n");
-	printf("Options:\n");
-	printf("    interface    Listen on <interface> for packets.\n");
+	printf("Usage: %s <interface> <source ip address> <destination ip address> <number of packets to examine>\n", APP_NAME);
 	printf("\n");
 
 return;
+}
+
+void print_arrays() {
+    int i = 0;
+    for (i = 0; i < MAX_SIZE; i++)  {
+        printf("%15u %15u\n", seq_arr[i], ack_arr[i]);
+    }
+}
+
+void match()    {
+    int i = 0;
+    int j = 0;
+    time_t rtt[ack_counter];
+    for (i = 0; i < MAX_SIZE; i++)  {
+        //iterate over the ACK numbers
+        if (ack_arr[i] == 0)
+            break;
+        for (j = 0; j < MAX_SIZE; j++)  {
+            //iterate over the Sequences numbers
+            if (seq_arr[i] == ack_arr[i])   {
+                //an ACK was matched to a sequence number, find the next smallest sequence number
+                //TODO
+            }
+        }
+    }
 }
 
 /*
@@ -174,8 +188,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     float rtt = 0.0;
     char src_address[20];
     char dest_address[20];
-    int i = 0;
-    int j = 0;
 
 	/* define ethernet header */
 	ethernet = (struct sniff_ethernet*)(packet);
@@ -246,96 +258,28 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     window_size = ntohs(tcp->th_win);
     seq_num = ntohl(tcp->th_seq);
     ack_num = ntohl(tcp->th_ack);
-
-    if (strcmp(dest_address, g_dest_address) == 0 && strcmp(src_address, g_src_address) == 0 || strcmp(dest_address, g_src_address) == 0 && strcmp(src_address, g_dest_address) == 0)    {
-        //printf("%15s -> %15s %10s %10s %10s %3s %3s %3s %1s %10s\n", "Src Address", "Dest Address", "Seq Num", "Ack Num", "Payload", "ack", "syn", "fin", "Time");
-        printf("%15s -> %15s | %10u | %10u | %10d | %10d %3d %3d | %10d | %10lu\n", src_address, dest_address, seq_num, ack_num, size_payload, ack, syn, fin, window_size, time(NULL));
-        seq_arr_index++;
-    }
-
-    if (ack_arr_index == MAX_SIZE || seq_arr_index == MAX_SIZE)  {
-        /*
-        printf("Printing:\n");
-
-        for (i = 0; i < MAX_SIZE; i++)  {
-            printf("%20u : %20lu : %20u : %20lu\n", seq_arr[i], seq_time_arr[i], ack_arr[i], ack_time_arr[i]);
-        }
-        */
-        /*
-        for (i = 0; i < MAX_SIZE; i++)  {
-            printf("%u  :   %u\n", seq_arr[i], ack_arr[i]);
-        }
-        */
-        /*
-        for (i = 0; i < MAX_SIZE; i++)  {
-            for (j = 0; j < MAX_SIZE; j++)  {
-
-                if (ack_arr[j] == 0) {
-                    j = MAX_SIZE;
-                    break;
-                }
-                
-                else if (seq_arr[i] == 0)    {
-                    i = MAX_SIZE;
-                    break;
-                }
-
-                else if (ack_arr[j] == seq_arr[i])   {
-                    printf("ACK: %u\n", ack_arr[i]);
-                    printf("TIME: %f\n", difftime(seq_time_arr[i], ack_time_arr[j]));
-                    printf("SEQ_TIME: %lu\n", (unsigned long) seq_time_arr[i]);
-                    printf("ACK_TIME: %lu\n\n", (unsigned long) ack_time_arr[j]);
-                }
-            }
-        }
-        */
-        exit(EXIT_SUCCESS);
-    }
-
     /*
-    if (!g_waiting && syn != 2 && size_payload != 0)   {
-        if (strcmp(dest_address, g_dest_address) == 0)   {
-            g_sequence_num = sequence_num;
-
-            printf("Sequence number %u recorded \n", sequence_num);
-            printf("Payload size is: %u\n", size_payload);
-            //printf("Expected ACK number is: %u\n", sequence_num + size_payload);
-            printf("\n");
-
-            g_waiting = 1;
-            g_start = time(NULL);
-            g_size_payload = size_payload;
-        }
-    } else  if (g_waiting && syn != 2 && size_payload == 0)   {
-        if (strcmp(src_address, g_dest_address) == 0)    {
-
-            printf("flag%u\n", ack);
-            printf("Checking ack %u with payload size: %u\n", ack_num, size_payload);
-            printf("Window: %u\n", window);
-
-            if (ack_num == g_sequence_num + g_size_payload)   {
-                //this is the expected ack
-                g_end = time(NULL);
-                rtt = difftime(g_end, g_start);
-                printf("Time: %f\n", rtt);
-
-                //TODO append stop time to an array?
-                g_waiting = 0;
-                printf("\n");
-            } else if (ack_num == g_sequence_num)  {
-                //packet must be resent
-                g_start = time(NULL);
-                printf("Timeout???");
-                g_waiting = 0;
-                printf("\n");
-            } else if (ack_num > g_sequence_num + g_size_payload)   {
-                //printf("Difference is: %u\n", (ack_num - (g_sequence_num + g_size_payload)));
-                g_waiting = 0;
-                //printf("\n");
-            }
-        }
+    if ((strcmp(dest_address, g_dest_address) == 0 && strcmp(src_address, g_src_address) == 0) || (strcmp(dest_address, g_src_address) == 0 && strcmp(src_address, g_dest_address) == 0))    {
+        printf("%15s -> %15s | %10u | %10u | %10d | %10d %3d %3d | %10d | %10lu\n", src_address, dest_address, seq_num, ack_num, size_payload, ack, syn, fin, window_size, time(NULL));
     }
     */
+
+    if (ack_counter == MAX_SIZE || seq_counter == MAX_SIZE) {
+        printf("Array was filled up before the packet count ran out.");
+        print_arrays();
+        exit(EXIT_FAILURE);
+    }
+    //TODO check for fin and syn in these if statements???
+    if (strcmp(dest_address, g_dest_address) == 0 && strcmp(src_address, g_src_address) == 0 && size_payload != 0) {
+        //this is an outgoing packet with a payload, record the sequence number
+        seq_arr[seq_counter] = seq_num;
+        seq_time_arr[seq_counter++] = time(NULL);
+    }
+    else if (strcmp(dest_address, g_src_address) == 0 && strcmp(src_address, g_dest_address) == 0 && size_payload == 0) {
+        //this is an incoming packet without a payload, record the ack number
+        ack_arr[ack_counter] = ack_num;
+        ack_time_arr[ack_counter++] = time(NULL);
+    }
 
     return;
 }
@@ -355,26 +299,30 @@ int main(int argc, char **argv)
 	int num_packets = -1;			/* number of packets to capture */
     int i = 0;
 
-	print_app_banner();
-
     for (i = 0; i < MAX_SIZE; i++)  {
         seq_arr[i] = 0;
+    }
+    for (i = 0; i < MAX_SIZE; i++)  {
         ack_arr[i] = 0;
     }
+    for (i = 0; i < MAX_SIZE; i++)  {
+        seq_time_arr[i] = 0;
+    }
+    for (i = 0; i < MAX_SIZE; i++)  {
+        ack_time_arr[i] = 0;
+    }
+
+	print_app_banner();
 
 	/* check for capture device name on command-line */
-	if (argc == 2) {
-		//dev = argv[1];
-	}
-	else if (argc > 2) {
+	if (argc > 3) {
 		dev = argv[1];
-        g_dest_address = argv[2];
-        g_src_address = argv[3];
-        printf("Source address is %s and Destination address is %s\n", g_src_address, g_dest_address);
+        g_src_address = argv[2];
+        g_dest_address = argv[3];
+        num_packets = atoi(argv[4]);
 	}
-    else if (argc > 3)  {
+    else if (argc > 4 || argc <= 3)  {
 		fprintf(stderr, "error: unrecognized command-line options\n\n");
-		print_app_usage();
 		exit(EXIT_FAILURE);
     }
 	else {
@@ -399,6 +347,7 @@ int main(int argc, char **argv)
 	printf("Device: %s\n", dev);
 	printf("Number of packets: %d\n", num_packets);
 	printf("Filter expression: %s\n", filter_exp);
+    printf("Source address is %s and Destination address is %s\n", g_src_address, g_dest_address);
 
 	/* open capture device */
     //TODO iv'e disabled promiscuous mode
@@ -428,9 +377,8 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-    //printf("    Src Address         Dest Address            Seq Num         Ack Num             Payload     ack syn fin window        Time\n");
-    printf("%15s -> %15s   %10s   %10s   %10s   %10s %3s %3s   %10s   %10s\n", "Src Address", "Dest Address", "Seq Num", "Ack Num", "Payload", "ack", "syn", "fin", "Window", "Time");
-    printf("\n");
+    //printf("%15s -> %15s   %10s   %10s   %10s   %10s %3s %3s   %10s   %10s\n", "Src Address", "Dest Address", "Seq Num", "Ack Num", "Payload", "ack", "syn", "fin", "Window", "Time");
+    //printf("\n");
 
 	/* now we can set our callback function */
 	pcap_loop(handle, num_packets, got_packet, NULL);

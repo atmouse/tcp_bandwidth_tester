@@ -62,7 +62,7 @@ class TCP_Client:
       while 1:
         try:
           self.send(buff)
-          time.sleep(1)
+          #time.sleep(1)
         except socket.error:
           print 'An error occurred!'
           return 
