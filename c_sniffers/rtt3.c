@@ -1,3 +1,6 @@
+#define __USE_BSD 
+#define __FAVOR_BSD
+
 #define APP_NAME		"sniffex"
 #define APP_DESC		"Sniffer example using libpcap"
 #define APP_COPYRIGHT	"Copyright (c) 2005 The Tcpdump Group"
@@ -163,8 +166,10 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     int ack = 0;
     int syn = 0;
     int fin = 0;
-    u_int seq_num;
-    u_int ack_num;
+
+    tcp_seq seq_num;
+    tcp_seq ack_num;
+
     u_short window_size;
     float rtt = 0.0;
     char src_address[20];
@@ -242,13 +247,16 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 
     strcpy(src_address, inet_ntoa(ip->ip_src));
     strcpy(dest_address, inet_ntoa(ip->ip_dst));
-    window_size = tcp->th_win;
-    seq_num = tcp->th_seq;
-    ack_num = tcp->th_ack;
+
+    //TODO added ntohs to next three statements, resolves sequence number problem?
+    //http://www.gnu.org/software/libc/manual/html_node/Byte-Order.html
+    window_size = ntohs(tcp->th_win);
+    seq_num = ntohl(tcp->th_seq);
+    ack_num = ntohl(tcp->th_ack);
 
     if (strcmp(dest_address, g_dest_address) == 0 && strcmp(src_address, g_src_address) == 0 || strcmp(dest_address, g_src_address) == 0 && strcmp(src_address, g_dest_address) == 0)    {
-        //printf("Src     Address     Dest Address    Seq Num     Ack Num     Payload     ack syn fin     Time");
-        printf("%15s -> %15s : %20u %20u %5d %3d %3d %3d %20lu\n", src_address, dest_address, seq_num, ack_num, size_payload, ack, syn, fin, time(NULL));
+        //printf("    Src Address     Dest Address                Seq Num         Ack Num     Payload     ack syn fin     Time");
+        printf("%15s -> %15s %20u %20u %5d %3d %3d %3d %3d %20lu\n", src_address, dest_address, seq_num, ack_num, size_payload, ack, syn, fin, window_size, time(NULL));
         seq_arr_index++;
     }
 
@@ -454,7 +462,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-    printf("Src Address     Dest Address        Seq Num     Ack Num     Payload     ack syn fin     Time\n");
+    printf("    Src Address         Dest Address            Seq Num         Ack Num             Payload     ack syn fin window        Time\n");
     printf("\n");
 
 	/* now we can set our callback function */

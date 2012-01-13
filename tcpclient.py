@@ -5,6 +5,7 @@
 import socket
 import sys
 import select
+import time
 
 class TCP_Client:
     def __init__(self, ip, port, cong):
@@ -61,6 +62,7 @@ class TCP_Client:
       while 1:
         try:
           self.send(buff)
+          time.sleep(1)
         except socket.error:
           print 'An error occurred!'
           return 
