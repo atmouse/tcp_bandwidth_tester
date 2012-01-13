@@ -23,6 +23,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <sys/time.h>
 
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518
@@ -39,8 +40,8 @@ char *g_dest_address = NULL;
 char *g_src_address = NULL;
 unsigned int seq_arr[MAX_SIZE];
 unsigned int ack_arr[MAX_SIZE];
-time_t seq_time_arr[MAX_SIZE];
-time_t ack_time_arr[MAX_SIZE];
+struct timeval seq_time_arr[MAX_SIZE];
+struct timeval ack_time_arr[MAX_SIZE];
 int seq_counter = 0;
 int ack_counter = 0;
 
@@ -147,18 +148,42 @@ void print_arrays() {
 void match()    {
     int i = 0;
     int j = 0;
+    int k = 0;
+    int seq_found = 0;
+    unsigned int sequence_num = 0;
+    int seq_index = 0;
     time_t rtt[ack_counter];
     for (i = 0; i < MAX_SIZE; i++)  {
         //iterate over the ACK numbers
         if (ack_arr[i] == 0)
             break;
+        seq_found = 0;
+        sequence_num = 0;
+        seq_index = 0;
         for (j = 0; j < MAX_SIZE; j++)  {
             //iterate over the Sequences numbers
-            if (seq_arr[i] == ack_arr[i])   {
+            if (seq_arr[j] == ack_arr[i])   {
                 //an ACK was matched to a sequence number, find the next smallest sequence number
-                //TODO
+                seq_found = 1;
+                //sequence_num = 0;
+                //seq_index = 0;
+                for (k = 0; k < MAX_SIZE; k++)  {
+                    if (seq_arr[k] < seq_arr[j] && seq_arr[k] > sequence_num)   {
+                        sequence_num = seq_arr[k];
+                        seq_index = k;
+                    }
+                }
+                break;
             }
         }
+        if (!seq_found || sequence_num == 0)    {
+            printf("Ack %u could not be matched. Continuing on to next ACK.\n", ack_arr[i]);
+            continue;
+        }
+        printf("Last sequence number to go out before ACK %u was sequence %u\n", ack_arr[i], sequence_num);
+        printf("Number of bytes transmitted by said sequence number: %u\n", ack_arr[i] - sequence_num);
+        printf("Time difference is: %f\n", (double) (ack_time_arr[i].tv_usec - seq_time_arr[seq_index].tv_usec)/1000);
+        printf("\n");
     }
 }
 
@@ -188,6 +213,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     float rtt = 0.0;
     char src_address[20];
     char dest_address[20];
+
+    int t_result = -1;
 
 	/* define ethernet header */
 	ethernet = (struct sniff_ethernet*)(packet);
@@ -258,27 +285,25 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     window_size = ntohs(tcp->th_win);
     seq_num = ntohl(tcp->th_seq);
     ack_num = ntohl(tcp->th_ack);
-    /*
-    if ((strcmp(dest_address, g_dest_address) == 0 && strcmp(src_address, g_src_address) == 0) || (strcmp(dest_address, g_src_address) == 0 && strcmp(src_address, g_dest_address) == 0))    {
-        printf("%15s -> %15s | %10u | %10u | %10d | %10d %3d %3d | %10d | %10lu\n", src_address, dest_address, seq_num, ack_num, size_payload, ack, syn, fin, window_size, time(NULL));
-    }
-    */
 
     if (ack_counter == MAX_SIZE || seq_counter == MAX_SIZE) {
-        printf("Array was filled up before the packet count ran out.");
-        print_arrays();
+        printf("Array was filled up before the packet count ran out.\n");
+        //print_arrays();
+        match();
         exit(EXIT_FAILURE);
     }
     //TODO check for fin and syn in these if statements???
     if (strcmp(dest_address, g_dest_address) == 0 && strcmp(src_address, g_src_address) == 0 && size_payload != 0) {
         //this is an outgoing packet with a payload, record the sequence number
         seq_arr[seq_counter] = seq_num;
-        seq_time_arr[seq_counter++] = time(NULL);
+        //TODO check on t_result?
+        t_result = gettimeofday(&(seq_time_arr[seq_counter++]), NULL);
     }
     else if (strcmp(dest_address, g_src_address) == 0 && strcmp(src_address, g_dest_address) == 0 && size_payload == 0) {
         //this is an incoming packet without a payload, record the ack number
         ack_arr[ack_counter] = ack_num;
-        ack_time_arr[ack_counter++] = time(NULL);
+        //TODO check on t_result?
+        t_result = gettimeofday(&(ack_time_arr[ack_counter++]), NULL);
     }
 
     return;
@@ -304,12 +329,6 @@ int main(int argc, char **argv)
     }
     for (i = 0; i < MAX_SIZE; i++)  {
         ack_arr[i] = 0;
-    }
-    for (i = 0; i < MAX_SIZE; i++)  {
-        seq_time_arr[i] = 0;
-    }
-    for (i = 0; i < MAX_SIZE; i++)  {
-        ack_time_arr[i] = 0;
     }
 
 	print_app_banner();
@@ -376,9 +395,6 @@ int main(int argc, char **argv)
 		    filter_exp, pcap_geterr(handle));
 		exit(EXIT_FAILURE);
 	}
-
-    //printf("%15s -> %15s   %10s   %10s   %10s   %10s %3s %3s   %10s   %10s\n", "Src Address", "Dest Address", "Seq Num", "Ack Num", "Payload", "ack", "syn", "fin", "Window", "Time");
-    //printf("\n");
 
 	/* now we can set our callback function */
 	pcap_loop(handle, num_packets, got_packet, NULL);

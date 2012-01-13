@@ -23,6 +23,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <sys/time.h>
 
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518
@@ -228,8 +229,11 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     seq_num = ntohl(tcp->th_seq);
     ack_num = ntohl(tcp->th_ack);
 
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+
     if (strcmp(dest_address, g_dest_address) == 0 && strcmp(src_address, g_src_address) == 0 || strcmp(dest_address, g_src_address) == 0 && strcmp(src_address, g_dest_address) == 0)    {
-        printf("%15s -> %15s | %10u | %10u | %10d | %10d %3d %3d | %10d | %10lu\n", src_address, dest_address, seq_num, ack_num, size_payload, ack, syn, fin, window_size, time(NULL));
+        printf("%15s -> %15s | %10u | %10u | %10d | %10d %3d %3d | %10d | %10f\n", src_address, dest_address, seq_num, ack_num, size_payload, ack, syn, fin, window_size, (double) tp.tv_usec/1000);
     }
 
     return;
