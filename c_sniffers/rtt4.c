@@ -5,7 +5,7 @@
 #define APP_DESC		"Sniffer example using libpcap"
 #define APP_COPYRIGHT	"Copyright (c) 2005 The Tcpdump Group"
 #define APP_DISCLAIMER	"THERE IS ABSOLUTELY NO WARRANTY FOR THIS PROGRAM."
-#define MAX_SIZE 1000
+#define MAX_SIZE 20
 
 /*
     http://stackoverflow.com/questions/523724/c-c-check-if-one-bit-is-set-in-i-e-int-variable
@@ -143,9 +143,14 @@ void match()    {
     int j = 0;
     int k = 0;
     int seq_found = 0;
+    double rtt = 0;
+    char rtt_string[25];
     unsigned int sequence_num = 0;
     int seq_index = 0;
-    time_t rtt[ack_counter];
+
+    FILE *file;
+    file = fopen("rtt1.txt", "a+"); //open for reading and writing (append if file exists)
+
     for (i = 0; i < MAX_SIZE; i++)  {
         //iterate over the ACK numbers
         if (ack_arr[i] == 0)
@@ -160,8 +165,6 @@ void match()    {
             if (seq_arr[j] == ack_arr[i])   {
                 //an ACK was matched to a sequence number, find the next smallest sequence number
                 seq_found = 1;
-                //sequence_num = 0;
-                //seq_index = 0;
                 for (k = 0; k < MAX_SIZE; k++)  {
                     if (seq_arr[k] < seq_arr[j] && seq_arr[k] > sequence_num)   {
                         sequence_num = seq_arr[k];
@@ -177,9 +180,13 @@ void match()    {
         }
         printf("Last sequence number to go out before ACK %u was sequence %u\n", ack_arr[i], sequence_num);
         printf("Number of bytes transmitted by said sequence number: %u\n", ack_arr[i] - sequence_num);
-        printf("Time difference is: %f\n", (double) (ack_time_arr[i].tv_usec - seq_time_arr[seq_index].tv_usec)/1000);
+        rtt = (double) (ack_time_arr[i].tv_usec - seq_time_arr[seq_index].tv_usec);
+        sprintf(rtt_string, "%f\n", rtt); //convert rtt to a string
+        fwrite(rtt_string, sizeof(rtt_string[0]), strlen(rtt_string), file);
+        printf("Time difference is: %f microseconds\n", rtt);
         printf("\n");
     }
+    fclose(file);
 }
 
 void clear()    {
@@ -273,12 +280,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
 
 	u_int flags = tcp->th_flags;
-    /*
-	u_char ack = 0;
-	u_char syn = 0;
-	ack = CHECK_BIT(flags, 4);
-    syn = CHECK_BIT(flags, 1);
-    */
+
     if (CHECK_BIT(flags, 4) == 16)
         ack = 1;
     if (CHECK_BIT(flags, 1) == 2)
@@ -294,20 +296,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     seq_num = ntohl(tcp->th_seq);
     ack_num = ntohl(tcp->th_ack);
  
-    if (ack_counter == MAX_SIZE || seq_counter == MAX_SIZE) {
-        printf("Array was filled up before the packet count ran out. %d %d \n", ack_counter, seq_counter);
-        match();
-
-        /*
-            TODO does clear even have an effect?
-        */
-        clear();
-        //exit(EXIT_FAILURE);
-        
-        ack_counter = 0;
-        seq_counter = 0;
-    }
-    
     //TODO check for fin and syn in these if statements???
     if (strcmp(dest_address, g_dest_address) == 0 && strcmp(src_address, g_src_address) == 0 && size_payload != 0) {
         //this is an outgoing packet with a payload, record the sequence number
@@ -322,11 +310,20 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
         t_result = gettimeofday(&(ack_time_arr[ack_counter++]), NULL);
     }
 
+    if (ack_counter == MAX_SIZE-1 || seq_counter == MAX_SIZE-1) {
+        match();
+       
+        //TODO does clear even have an effect here?
+        clear();
+        
+        ack_counter = 0;
+        seq_counter = 0;
+    }
+
     return;
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 
     char *dev = NULL;			/* capture device name */
 	char errbuf[PCAP_ERRBUF_SIZE];		/* error buffer */
@@ -338,22 +335,11 @@ int main(int argc, char **argv)
 	bpf_u_int32 mask;			/* subnet mask */
 	bpf_u_int32 net;			/* ip */
 	int num_packets = -1;			/* number of packets to capture */
-    //int i = 0;
-    int running = 1;
-    /*
-    for (i = 0; i < MAX_SIZE; i++)  {
-        seq_arr[i] = 0;
-    }
-    for (i = 0; i < MAX_SIZE; i++)  {
-        ack_arr[i] = 0;
-    }
-    for (i = 0; i < MAX_SIZE; i++)  {
-        seq_time_arr[i] = NULL;
-    }
-    for (i = 0; i < MAX_SIZE; i++)  {
-        ack_time_arr[i] = NULL;
-    }
-    */
+
+    FILE *file;
+    file = fopen("rtt1.txt", "w+"); //open for reading and writing (overwrite existing file)
+    fclose(file);
+
     clear();
 
 	print_app_banner();
@@ -421,13 +407,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-    //while (running)   {
-	    /* now we can set our callback function */
-	    pcap_loop(handle, num_packets, got_packet, NULL);
-        //match();
-        //break;
-        //clear();
-    //}
+    pcap_loop(handle, num_packets, got_packet, NULL);
 
 	/* cleanup */
 	pcap_freecode(&fp);
@@ -437,4 +417,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
