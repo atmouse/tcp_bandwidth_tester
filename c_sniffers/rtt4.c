@@ -138,13 +138,6 @@ print_app_usage(void)
 return;
 }
 
-void print_arrays() {
-    int i = 0;
-    for (i = 0; i < MAX_SIZE; i++)  {
-        printf("%15u %15u\n", seq_arr[i], ack_arr[i]);
-    }
-}
-
 void match()    {
     int i = 0;
     int j = 0;
@@ -162,6 +155,8 @@ void match()    {
         seq_index = 0;
         for (j = 0; j < MAX_SIZE; j++)  {
             //iterate over the Sequences numbers
+            if (seq_arr[j] == 0)
+                break;
             if (seq_arr[j] == ack_arr[i])   {
                 //an ACK was matched to a sequence number, find the next smallest sequence number
                 seq_found = 1;
@@ -185,6 +180,19 @@ void match()    {
         printf("Time difference is: %f\n", (double) (ack_time_arr[i].tv_usec - seq_time_arr[seq_index].tv_usec)/1000);
         printf("\n");
     }
+}
+
+void clear()    {
+    int i = 0;
+
+    for (i = 0; i < MAX_SIZE; i++)  {
+        seq_arr[i] = 0;
+    }
+    for (i = 0; i < MAX_SIZE; i++)  {
+        ack_arr[i] = 0;
+    }
+    memset(seq_time_arr, 0, sizeof(struct timeval)*MAX_SIZE);
+    memset(ack_time_arr, 0, sizeof(struct timeval)*MAX_SIZE);
 }
 
 /*
@@ -285,13 +293,21 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     window_size = ntohs(tcp->th_win);
     seq_num = ntohl(tcp->th_seq);
     ack_num = ntohl(tcp->th_ack);
-
+ 
     if (ack_counter == MAX_SIZE || seq_counter == MAX_SIZE) {
-        printf("Array was filled up before the packet count ran out.\n");
-        //print_arrays();
+        printf("Array was filled up before the packet count ran out. %d %d \n", ack_counter, seq_counter);
         match();
-        exit(EXIT_FAILURE);
+
+        /*
+            TODO does clear even have an effect?
+        */
+        clear();
+        //exit(EXIT_FAILURE);
+        
+        ack_counter = 0;
+        seq_counter = 0;
     }
+    
     //TODO check for fin and syn in these if statements???
     if (strcmp(dest_address, g_dest_address) == 0 && strcmp(src_address, g_src_address) == 0 && size_payload != 0) {
         //this is an outgoing packet with a payload, record the sequence number
@@ -322,14 +338,23 @@ int main(int argc, char **argv)
 	bpf_u_int32 mask;			/* subnet mask */
 	bpf_u_int32 net;			/* ip */
 	int num_packets = -1;			/* number of packets to capture */
-    int i = 0;
-
+    //int i = 0;
+    int running = 1;
+    /*
     for (i = 0; i < MAX_SIZE; i++)  {
         seq_arr[i] = 0;
     }
     for (i = 0; i < MAX_SIZE; i++)  {
         ack_arr[i] = 0;
     }
+    for (i = 0; i < MAX_SIZE; i++)  {
+        seq_time_arr[i] = NULL;
+    }
+    for (i = 0; i < MAX_SIZE; i++)  {
+        ack_time_arr[i] = NULL;
+    }
+    */
+    clear();
 
 	print_app_banner();
 
@@ -396,8 +421,13 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	/* now we can set our callback function */
-	pcap_loop(handle, num_packets, got_packet, NULL);
+    //while (running)   {
+	    /* now we can set our callback function */
+	    pcap_loop(handle, num_packets, got_packet, NULL);
+        //match();
+        //break;
+        //clear();
+    //}
 
 	/* cleanup */
 	pcap_freecode(&fp);
