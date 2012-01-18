@@ -142,7 +142,7 @@ class GraphWindow():
                 self.colours = ['#FF0000', '#330000', '#339900', '#0066CC', '#990099']
                 self.filename = filename
 
-                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (MB)', xticks=[], yticks=arange(0, 300, 10))
+                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (Mbps)', xticks=[], yticks=arange(0, 1000, 10))
                 self.ax1.grid(True) #Show a grid on the plot axes
                 self.max_y = 140
                 self.ax1.axis(array([0, 100, 0, self.max_y]))
@@ -173,7 +173,8 @@ class GraphWindow():
                 for i in keys:
                     try:
                         speed = bandwidth[i]
-                        speed = speed / (1000 * 1000.)
+                        #speed = speed / (1000 * 1000.)
+                        speed = speed * 8. / 10**6
 
                         #if i has not been added to the y data, the except block will add it.
                         self.y[i][0].pop(0)

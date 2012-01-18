@@ -26,7 +26,7 @@ class GraphWindow():
                 #available colours for graphing
                 self.colours = ['#FF0000', '#330000', '#339900', '#0066CC', '#990099']
 
-                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (MB)', yticks=arange(0, 300, 10))
+                self.ax1 = self.f.add_subplot(111, xlabel='Time (s)', ylabel='Throughput (Mbps)', yticks=arange(0, 1000, 10))
                 self.ax1.grid(True) #Show a grid on the plot axes
 
                 # Instantiate canvas
@@ -64,7 +64,7 @@ class GraphWindow():
                         max_length = len(i)
 
                 for i in xrange(len(data)):
-                    data[i] = array(data[i])/(1000*1000.)
+                    data[i] = array(data[i]) * 8. / (10**6)
                     if len(data[i]) < max_length:
                         diff = max_length - len(data[i])
                         data[i] = hstack((zeros(diff), data[i]))

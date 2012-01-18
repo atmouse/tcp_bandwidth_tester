@@ -5,7 +5,7 @@
 #define APP_DESC		"Sniffer example using libpcap"
 #define APP_COPYRIGHT	"Copyright (c) 2005 The Tcpdump Group"
 #define APP_DISCLAIMER	"THERE IS ABSOLUTELY NO WARRANTY FOR THIS PROGRAM."
-#define MAX_SIZE 20
+#define MAX_SIZE 30
 
 /*
     http://stackoverflow.com/questions/523724/c-c-check-if-one-bit-is-set-in-i-e-int-variable
@@ -38,6 +38,7 @@
 
 char *g_dest_address = NULL;
 char *g_src_address = NULL;
+char *g_filename;
 unsigned int seq_arr[MAX_SIZE];
 unsigned int ack_arr[MAX_SIZE];
 struct timeval seq_time_arr[MAX_SIZE];
@@ -143,6 +144,8 @@ void match()    {
     int j = 0;
     int k = 0;
     int seq_found = 0;
+    double rtt_sum = 0;
+    int rtt_count = 0;
     double rtt = 0;
     char rtt_string[25];
     unsigned int sequence_num = 0;
@@ -175,18 +178,32 @@ void match()    {
             }
         }
         if (!seq_found || sequence_num == 0)    {
-            printf("Ack %u could not be matched. Continuing on to next ACK.\n", ack_arr[i]);
+            //printf("Ack %u could not be matched. Continuing on to next ACK.\n", ack_arr[i]);
             continue;
         }
-        printf("Last sequence number to go out before ACK %u was sequence %u\n", ack_arr[i], sequence_num);
-        printf("Number of bytes transmitted by said sequence number: %u\n", ack_arr[i] - sequence_num);
+        //printf("Last sequence number to go out before ACK %u was sequence %u\n", ack_arr[i], sequence_num);
+        //printf("Number of bytes transmitted by said sequence number: %u\n", ack_arr[i] - sequence_num);
         rtt = (double) (ack_time_arr[i].tv_usec - seq_time_arr[seq_index].tv_usec);
+        if (rtt < 0)    {
+            /*
+                TODO for some reason we have a negative time value. Not sure why this happens.
+                Maybe due to problems with timing library used because linux isn't really a posix system.
+            */
+            continue;
+        }
+        rtt_sum += rtt;
+        rtt_count += 1;
         sprintf(rtt_string, "%f\n", rtt); //convert rtt to a string
         fwrite(rtt_string, sizeof(rtt_string[0]), strlen(rtt_string), file);
-        printf("Time difference is: %f microseconds\n", rtt);
-        printf("\n");
+        //printf("Time difference is: %f microseconds\n", rtt);
+        //printf("\n");
     }
     fclose(file);
+    /*
+        Depending on netwerk speed, one obtains several thousand rtt samples per second.
+        Print out only the average of each sample set to avoid excessive printouts.
+    */
+    printf("RTT: %f milliseconds\n", (rtt_sum/rtt_count)/1000);
 }
 
 void clear()    {
@@ -345,25 +362,18 @@ int main(int argc, char **argv) {
 	print_app_banner();
 
 	/* check for capture device name on command-line */
-	if (argc > 3) {
+	if (argc == 6) {
 		dev = argv[1];
         g_src_address = argv[2];
         g_dest_address = argv[3];
         num_packets = atoi(argv[4]);
+        g_filename = argv[5];
 	}
-    else if (argc > 4 || argc <= 3)  {
+    else {
 		fprintf(stderr, "error: unrecognized command-line options\n\n");
+        print_app_usage();
 		exit(EXIT_FAILURE);
     }
-	else {
-		/* find a capture device if not specified on command-line */
-		dev = pcap_lookupdev(errbuf);
-		if (dev == NULL) {
-			fprintf(stderr, "Couldn't find default device: %s\n",
-			    errbuf);
-			exit(EXIT_FAILURE);
-		}
-	}
 	
 	/* get network number and mask associated with capture device */
 	if (pcap_lookupnet(dev, &net, &mask, errbuf) == -1) {
@@ -378,6 +388,7 @@ int main(int argc, char **argv) {
 	printf("Number of packets: %d\n", num_packets);
 	printf("Filter expression: %s\n", filter_exp);
     printf("Source address is %s and Destination address is %s\n", g_src_address, g_dest_address);
+    printf("RTT data will be stored in %s\n", g_filename);
 
 	/* open capture device */
     //TODO iv'e disabled promiscuous mode
