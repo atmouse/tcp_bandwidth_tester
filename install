@@ -5,4 +5,15 @@
 #an "available" congestion control algorithm.
 #Run as root
 
-/sbin/sysctl -w net.ipv4.tcp_congestion_control="$1"
+#reno should be available by default
+/sbin/modprobe tcp_htcp
+/sbin/modprobe tcp_hybla
+/sbin/modprobe tcp_illinois
+/sbin/modprobe tcp_lp
+/sbin/modprobe tcp_vegas
+/sbin/modprobe tcp_westwood
+/sbin/modprobe tcp_yeah
+/sbin/modprobe tcp_cubic
+/sbin/modprobe tcp_highspeed
+/sbin/modprobe tcp_scalable
+/sbin/modprobe tcp_bic
