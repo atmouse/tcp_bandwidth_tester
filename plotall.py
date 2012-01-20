@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    usage: python plotall.py <save directory> <name prefix1> <name prefix 2> and so on
+    usage: python plotall.py <save directory> <compute mean (0 or 1)> <name prefix1> <name prefix 2> and so on
 """
 
 from matplotlib import pyplot as plt
@@ -10,7 +10,7 @@ import os
 from pylab import*
 from numpy import*
 
-def plot(data_files, directory):
+def plot(data_files, directory, compute_mean):
     print data_files
 
     fig = plt.figure()
@@ -46,8 +46,19 @@ def plot(data_files, directory):
         line, = plt.plot(x, y_data, c)
         lines.append(line)
     name = data_files[0].split("_")[0]
-    names = [i[len(name)+1:] for i in data_files]
-    plt.legend(lines, names, 'upper left')
+
+    if compute_mean:
+        mean_values = []
+        for y_data in data:
+            mean_values.append(mean(y_data[diff:]))
+        #names = [i[len(name)+1:] for i in data_files]
+        names = []
+        for i in xrange(len(data_files)):
+            names.append(data_files[i][len(name)+1:] + " : " + str(floor(mean_values[i])) + " Mbps")
+        plt.legend(lines, names, 'upper left')
+    else:
+        names = [i[len(name)+1:] for i in data_files]
+        plt.legend(lines, names, 'upper left')
 
     #plt.show()
 
@@ -58,10 +69,29 @@ if __name__ == "__main__":
     num_args = len(sys.argv)
     filenames = []
     listing = os.listdir(os.getcwd())
+
+    d = os.path.dirname(sys.argv[1] + "/")
+    if not os.path.exists(d):
+        print "Creating directory " + d
+        os.makedirs(d)
+    else:
+         if os.path.isdir(d):
+            print "Directory already exists"
+         else:
+            print "Creating directory " + d
+            os.makedirs(d)
+
     pairs = {}
-    for i in xrange(2, num_args):
+    compute_mean = int(sys.argv[2])
+    for i in xrange(3, num_args):
         filenames.append(sys.argv[i])
+
     for i in listing:
+
+        if os.path.isdir(i):
+            print i + " is a directory"
+            continue
+
         for j in filenames:
             if (j in i[:len(j)]):
                 value = i
@@ -71,12 +101,6 @@ if __name__ == "__main__":
                     pairs[key] = []
                 pairs[key].append(value)
     
-    d = os.path.dirname(sys.argv[1] + "/")
-    if not os.path.exists(d):
-        print "Creating directory " + d
-        os.makedirs(d)
-
-                
     for v in pairs.values():
-        plot(v, d)
+        plot(v, d, compute_mean)
         #break
