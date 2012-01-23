@@ -1,0 +1,14 @@
+\contentsline {figure}{\numberline {1}{\ignorespaces Illinois commences transmission first, and is joind by YeAH after 10 seconds. Illinois maintains a mean throughput of 93 Mbps, while YeAH maintains a very low mean throughput of 10 Mbps.}}{6}
+\contentsline {figure}{\numberline {2}{\ignorespaces YeAH is now allowed to begin transmission before Illinois. Although still less than Illinois, YeAH now maintains a much higher than before mean throughput of 37 Mbps, whilst Illinois has a lower than before mean throughput of 67 Mbps.}}{6}
+\contentsline {figure}{\numberline {3}{\ignorespaces Vegas begins transmission, followed by BIC ten seconds later. BIC immediately achieves a mean throughput of 91 Mbps, while Vegas is reduced to a mean throughput of 13 Mbps. This outcome remains the same regardless of what TCP variant Vegas competes against.}}{11}
+\contentsline {figure}{\numberline {4}{\ignorespaces Hybla and LP are able to share bandwidth equally.}}{11}
+\contentsline {figure}{\numberline {5}{\ignorespaces Hybla and Reno are able to share bandwidth equally.}}{12}
+\contentsline {figure}{\numberline {6}{\ignorespaces YeAH and Hybla are able to share bandwidth equally.}}{12}
+\contentsline {figure}{\numberline {7}{\ignorespaces Cubic and Hybla are able to share bandwidth equally.}}{12}
+\contentsline {figure}{\numberline {8}{\ignorespaces Reno and LP are able to share bandwidth equally.}}{12}
+\contentsline {figure}{\numberline {9}{\ignorespaces LP and YeAH are able to share bandwidth equally.}}{13}
+\contentsline {figure}{\numberline {10}{\ignorespaces LP and Cubic are able to share bandwidth equally.}}{13}
+\contentsline {figure}{\numberline {11}{\ignorespaces Reno and YeAH are able to share bandwidth equally.}}{13}
+\contentsline {figure}{\numberline {12}{\ignorespaces Reno and Cubic are able to share bandwidth equally.}}{13}
+\contentsline {figure}{\numberline {13}{\ignorespaces YeAH and Cubic are able to share bandwidth equally.}}{14}
+\contentsline {figure}{\numberline {14}{\ignorespaces Show all TCP congestion control algorithms available in the Linux kernel. kernel_version is the current version number of one's Linux kernel.}}{14}

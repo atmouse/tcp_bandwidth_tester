@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2012.1.18)  22 JAN 2012 00:05
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2012.1.18)  23 JAN 2012 01:41
 entering extended mode
  %&-line parsing enabled.
 **sample.tex
@@ -92,72 +92,132 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <8> on input line 22.
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <6> on input line 22.
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
+ (./sample.toc
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <10.95> on input line 4.
+)
+\tf@toc=\write3
+\openout3 = `sample.toc'.
 
  [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
 
 
 ]
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 58.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 59.
 
 (/usr/share/texmf-texlive/tex/latex/base/omscmr.fd
 File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 58.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 59.
 
-Underfull \hbox (badness 1442) in paragraph at lines 72--74
+Underfull \hbox (badness 1442) in paragraph at lines 73--75
 \OT1/cmr/m/n/10.95 The linux socket in-ter-face al-lows one to
  []
 
 [2]
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <10.95> on input line 118.
+Underfull \vbox (badness 3679) has occurred while \output is active []
 
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-[3]
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-<exp29.png, id=17, 578.16pt x 433.62pt>
+ [3]
+<exp29.png, id=18, 578.16pt x 433.62pt>
 File: exp29.png Graphic file (type png)
  <use exp29.png>
-<exp29b.png, id=19, 578.16pt x 433.62pt>
+<exp29b.png, id=20, 578.16pt x 433.62pt>
 File: exp29b.png Graphic file (type png)
  <use exp29b.png>
 
-LaTeX Warning: Reference `vegas_reno' on page 4 undefined on input line 267.
+LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-<exp44.png, id=20, 578.16pt x 433.62pt>
+[4]
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+<exp44.png, id=24, 578.16pt x 433.62pt>
 File: exp44.png Graphic file (type png)
  <use exp44.png>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[5 <./exp29.png> <./exp29b.png>]
+Underfull \hbox (badness 1009) in paragraph at lines 489--489
+[]\OT1/cmr/m/n/10.95 Table 8: Mean through-put of West-wood
+ []
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[6]
+Overfull \vbox (2.33112pt too high) has occurred while \output is active []
+
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[7]
+Underfull \hbox (badness 1668) in paragraph at lines 666--666
+[]\OT1/cmr/m/n/10.95 Table 12: Mean through-put of Scal-able
+ []
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[8] <exp14.png, id=40, 578.16pt x 433.62pt>
+File: exp14.png Graphic file (type png)
+ <use exp14.png>
+<exp16.png, id=41, 578.16pt x 433.62pt>
+File: exp16.png Graphic file (type png)
+ <use exp16.png>
+<exp19.png, id=42, 578.16pt x 433.62pt>
+File: exp19.png Graphic file (type png)
+ <use exp19.png>
+<exp20.png, id=43, 578.16pt x 433.62pt>
+File: exp20.png Graphic file (type png)
+ <use exp20.png>
+<exp35.png, id=44, 578.16pt x 433.62pt>
+File: exp35.png Graphic file (type png)
+ <use exp35.png>
+<exp38.png, id=45, 578.16pt x 433.62pt>
+File: exp38.png Graphic file (type png)
+ <use exp38.png>
+<exp39.png, id=46, 578.16pt x 433.62pt>
+File: exp39.png Graphic file (type png)
+ <use exp39.png>
+<exp53.png, id=47, 578.16pt x 433.62pt>
+File: exp53.png Graphic file (type png)
+ <use exp53.png>
+<exp54.png, id=48, 578.16pt x 433.62pt>
+File: exp54.png Graphic file (type png)
+ <use exp54.png>
+<exp69.png, id=49, 578.16pt x 433.62pt>
+File: exp69.png Graphic file (type png)
+ <use exp69.png>
 No file sample.bbl.
-[4 <./exp29.png> <./exp29b.png>] [5 <./exp44.png>] (./sample.aux)
+[9 <./exp44.png> <./exp14.png>] [10 <./exp16.png> <./exp19.png> <./exp20.png> <
+./exp35.png>] [11 <./exp38.png> <./exp39.png> <./exp53.png> <./exp54.png>]
+[12
 
-LaTeX Warning: There were undefined references.
-
- ) 
+ <./exp69.png>] (./sample.aux) ) 
 Here is how much of TeX's memory you used:
- 976 strings out of 495061
- 12267 string characters out of 1182621
- 71495 words of memory out of 3000000
- 4188 multiletter control sequences out of 15000+50000
+ 1053 strings out of 495061
+ 13277 string characters out of 1182621
+ 78730 words of memory out of 3000000
+ 4252 multiletter control sequences out of 15000+50000
  9157 words of font info for 32 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
- 25i,8n,19p,347b,244s stack positions out of 5000i,500n,10000p,200000b,50000s
-</usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/sha
-re/texmf-texlive/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/texmf-te
-xlive/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-texlive/fonts/
-type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-texlive/fonts/type1/public
-/amsfonts/cm/cmr17.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm
-/cmsy10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmti10.pfb
->
-Output written on sample.pdf (5 pages, 231629 bytes).
+ 25i,8n,19p,381b,244s stack positions out of 5000i,500n,10000p,200000b,50000s
+</usr/share/texmf-texlive/fonts/type1/public/am
+sfonts/cm/cmbx10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/c
+mbx12.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmr10.pfb></
+usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/te
+xmf-texlive/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texmf-texlive/
+fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-texlive/fonts/type1
+/public/amsfonts/cm/cmti10.pfb>
+Output written on sample.pdf (12 pages, 810846 bytes).
 PDF statistics:
- 53 PDF objects out of 1000 (max. 8388607)
+ 96 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 16 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 66 words of extra memory for PDF output out of 10000 (max. 10000000)
 

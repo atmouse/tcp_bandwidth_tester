@@ -1,0 +1,23 @@
+In this section, a short overview of the steps taken to successfully utilise different TCP congestion control algorithms is given.
+Various TCP congestion control algorithms are available in the Linux kernel as modules. The command \begin{verbatim} ls /lib/modules/$kernel_version/kernel/net/ipv4/ \end{verbatim}
+allows one to see all available modules. These modules are not available for use by default, and must be installed using \begin{verbatim} /sbin/modprobe name_of_tcp_variant \end{verbatim}.
+One can then force Linux to use only this congestion control algorithm with the command \begin{verbatim} /sbin/sysctl -w net.ipv4.tcp_congestion_control=name_of_tcp_variant \end{verbatim}.
+Of course one does not wish to be limited to only one type of congestion control algorithm at any one time, and fortunately, Linux makes provision for this.
+The socket interface allows one to set socket options that allows the use of a different TCP congestion control algorithm for each TCP socket that is created.
+This was successfully done in the Python programming language. The code used in the client programs to set TCP socket options is as follows:
+\begin{verbatim}
+	tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	socket.TCP_CONGESTION = 13
+	tcp_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, self.congestion)
+	temp = tcp_socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, 10)
+\end{verbatim}
+The value returned by the variable temp is the type of congestion control that the socket has been set to, and indicates success or failure.
+It is important to note that for altering the availability of algorithms, setting which algorithm is in use, as well as setting socket options requires
+sudo rights.
+
+
+
+
+
+
+http://linuxgazette.net/135/pfeiffer.html
