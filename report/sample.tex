@@ -68,7 +68,6 @@ The different congestion control mechanisms available for use by the Linux kerne
 \item Cubic
 \item Highspeed
 \item Scalable
-\item Veno
 \end{itemize}
 The linux socket interface allows one to change the type of congestion control a TCP connection uses by setting
 the appropriate socket option.
@@ -104,12 +103,12 @@ could be placed into groups in which all members are well behaved.
 \section{Results}
 \label{sec:results}
 
-As mentioned in section \ref{sec:exp}, all TCP variants were compared to each other. The results of these experiments will
+As stated in section \ref{sec:exp}, all TCP variants were compared to each other. The results of these experiments will
 be discussed in this section for each TCP variant individually. For each experiment, the mean of each TCP variant's bandwidth measurements
-is calculated and tabularised. This allows one an idea of what the average bandwidth usage of a TCP variant.
+is calculated and tabularised. This allows one an idea of what the average bandwidth usage of a TCP variant is.
 
 \subsection{HTCP}
-From Table \ref{table:htcp}, HTCP is able to co-exist with itself, with each HTCP client having a mean throughput of 52 Mbps. HTCP has the lower throughput against Illinois, BIC, Westwood, and Scalable. 
+From Table \ref{table:htcp}, HTCP is able to co-exist with itself. HTCP has the lower throughput against Illinois, BIC, Westwood, and Scalable. 
 HTCP is stronger against Hybla, LP, Vegas, Reno, YeAH, Cubic, and Highspeed. Against these it maintains a mean throughput
 in the range of 64 to 67 Mbps. The exception is vegas, against which HTCP has a mean throughput of about 95 Mbps.
 
@@ -201,7 +200,7 @@ is unable to fairly share bandwidth with any other congestion control algorithm.
 of not being able to co-exist with even itself, something all of the other congestion control algorithms are
 capable of.
 
-In Section \ref{sec:exp} it was mentioned that in some cases the order in which clients are allowed to begin transmission influences the bandwidth utilised. Illinois is one algorithm for which this applies. In table
+In Section \ref{sec:exp} it was stated that in some cases the order in which clients are allowed to begin transmission influences the bandwidth utilised. Illinois is one algorithm for which this applies. In Table
 \ref{table:illinois}, Illinois is allowed to begin transmission first, and even after a second client begins
 transmitting data, Illinois still maintains a very high mean throughput. However if the order of transmission
 is reversed, the competing client is allowed much more bandwidth, even if it is still less than Illinois.
@@ -579,7 +578,7 @@ Again, it also shares these TCP variants' weakness against Illinois, BIC, Westwo
 
 \subsection{Highspeed}
 \label{subsec:highspeed}
-Table \ref{table:highspeed} shows that Highspeed shares bandwidth well with itself and reasonable well with
+Table \ref{table:highspeed} shows that Highspeed shares bandwidth well with itself and reasonably well with
 YeAH. Algorithms like Illinois, Westwood, BIC, and Scalable tend to use most of the bandwidth when
 competing against Highspeed.
 
@@ -667,11 +666,11 @@ throughput against Scalable.
 	\label{table:scalable}
 \end{table}
 
-\section{Technical Difficulties}
+\section{Technical Details}
 \label{sec:diff}
 In this section, a short overview of the steps taken to successfully utilise different TCP congestion control algorithms is given.
 Various TCP congestion control algorithms are available in the Linux kernel as modules.
-One can force Linux to use a specific congestion control algorithm, but one does not wish to be limited to only one type of congestion control algorithm at any one time.
+One can force Linux to use a specific congestion control algorithm, but one does not wish to be limited to only one type of congestion control algorithm at any time.
 Fortunately, Linux makes provision for this.
 The socket interface allows one to set socket options that allows the use of a different TCP congestion control algorithm for each TCP socket that is created.
 This was successfully done in the Python programming language.

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2012.1.18)  23 JAN 2012 01:41
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2012.1.18)  23 JAN 2012 09:01
 entering extended mode
  %&-line parsing enabled.
 **sample.tex
@@ -111,14 +111,18 @@ File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
 (Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 59.
 
-Underfull \hbox (badness 1442) in paragraph at lines 73--75
+Underfull \hbox (badness 1442) in paragraph at lines 72--74
 \OT1/cmr/m/n/10.95 The linux socket in-ter-face al-lows one to
  []
 
 [2]
-Underfull \vbox (badness 3679) has occurred while \output is active []
 
- [3]
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[3]
+Underfull \vbox (badness 1603) has occurred while \output is active []
+
+
 <exp29.png, id=18, 578.16pt x 433.62pt>
 File: exp29.png Graphic file (type png)
  <use exp29.png>
@@ -128,18 +132,17 @@ File: exp29b.png Graphic file (type png)
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[4]
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-<exp44.png, id=24, 578.16pt x 433.62pt>
+[4] <exp44.png, id=24, 578.16pt x 433.62pt>
 File: exp44.png Graphic file (type png)
- <use exp44.png>
+ <use exp44.png> [5 <./exp29.png> <./exp29b.png>]
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[5 <./exp29.png> <./exp29b.png>]
-Underfull \hbox (badness 1009) in paragraph at lines 489--489
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
+Underfull \hbox (badness 1009) in paragraph at lines 488--488
 []\OT1/cmr/m/n/10.95 Table 8: Mean through-put of West-wood
  []
 
@@ -150,19 +153,16 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [6]
-Overfull \vbox (2.33112pt too high) has occurred while \output is active []
+Underfull \vbox (badness 4013) has occurred while \output is active []
 
 
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [7]
-Underfull \hbox (badness 1668) in paragraph at lines 666--666
+Underfull \hbox (badness 1668) in paragraph at lines 665--665
 []\OT1/cmr/m/n/10.95 Table 12: Mean through-put of Scal-able
  []
-
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [8] <exp14.png, id=40, 578.16pt x 433.62pt>
 File: exp14.png Graphic file (type png)
@@ -203,7 +203,7 @@ No file sample.bbl.
 Here is how much of TeX's memory you used:
  1053 strings out of 495061
  13277 string characters out of 1182621
- 78730 words of memory out of 3000000
+ 75730 words of memory out of 3000000
  4252 multiletter control sequences out of 15000+50000
  9157 words of font info for 32 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
@@ -215,7 +215,7 @@ usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/te
 xmf-texlive/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texmf-texlive/
 fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-texlive/fonts/type1
 /public/amsfonts/cm/cmti10.pfb>
-Output written on sample.pdf (12 pages, 810846 bytes).
+Output written on sample.pdf (12 pages, 809574 bytes).
 PDF statistics:
  96 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)

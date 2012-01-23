@@ -2,16 +2,16 @@
 \contentsline {section}{\numberline {2}Experiments performed}{2}
 \contentsline {section}{\numberline {3}Results}{3}
 \contentsline {subsection}{\numberline {3.1}HTCP}{3}
-\contentsline {subsection}{\numberline {3.2}Hybla}{4}
+\contentsline {subsection}{\numberline {3.2}Hybla}{3}
 \contentsline {subsection}{\numberline {3.3}Illinois}{4}
 \contentsline {subsection}{\numberline {3.4}LP}{4}
-\contentsline {subsection}{\numberline {3.5}Vegas}{5}
-\contentsline {subsection}{\numberline {3.6}Reno}{5}
-\contentsline {subsection}{\numberline {3.7}BIC}{5}
+\contentsline {subsection}{\numberline {3.5}Vegas}{4}
+\contentsline {subsection}{\numberline {3.6}Reno}{6}
+\contentsline {subsection}{\numberline {3.7}BIC}{6}
 \contentsline {subsection}{\numberline {3.8}Westwood}{6}
 \contentsline {subsection}{\numberline {3.9}YeAH}{6}
-\contentsline {subsection}{\numberline {3.10}Cubic}{7}
+\contentsline {subsection}{\numberline {3.10}Cubic}{6}
 \contentsline {subsection}{\numberline {3.11}Highspeed}{7}
 \contentsline {subsection}{\numberline {3.12}Scalable}{7}
-\contentsline {section}{\numberline {4}Technical Difficulties}{8}
+\contentsline {section}{\numberline {4}Technical Details}{8}
 \contentsline {section}{\numberline {5}Conclusion}{8}
